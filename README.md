@@ -15,7 +15,7 @@ This repository contains a React Native plugin that provides a [Google Navigatio
 
 |                                 | Android | iOS       |
 | ------------------------------- | ------- | --------- |
-| **Minimum mobile OS supported** | SDK 23+ | iOS 16.0+ |
+| **Minimum mobile OS supported** | SDK 24+ | iOS 16.0+ |
 
 * A React Native project
 * A Google Cloud project
@@ -28,6 +28,15 @@ This repository contains a React Native plugin that provides a [Google Navigatio
 
 > [!IMPORTANT]
 > [Apply API restrictions](https://developers.google.com/maps/api-security-best-practices#api-restriction) to the API key to limit usage to "Navigation SDK, "Maps SDK for Android", and "Maps SDK for iOS" for enhanced security and cost management. This helps guard against unauthorized use of your API key.
+
+## React Native Compatibility
+
+The current version of this package has been tested and verified to work with the following React Native versions: 
+
+**0.81.1, 0.80.2, 0.79.6, 0.78.3, 0.77.3, 0.76.9, 0.75.5, 0.74.7**
+
+> [!IMPORTANT]
+> This package does not yet support React Native's new architecture. Make sure the new architecture is disabled in your project configuration as shown in the [Installation](#installation) section.
 
 ## Installation
 
@@ -84,12 +93,12 @@ dependencies {
 
 #### Minimum SDK Requirements for Android
 
-The `minSdkVersion` for your Android project must be set to 23 or higher in `android/app/build.gradle`:
+The `minSdkVersion` for your Android project must be set to 24 or higher in `android/app/build.gradle`:
 
 ```groovy
 android {
     defaultConfig {
-        minSdkVersion 23
+        minSdkVersion 24
     }
 }
 ```

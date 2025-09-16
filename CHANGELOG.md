@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.10.2](https://github.com/googlemaps/react-native-navigation-sdk/compare/v0.10.1...v0.10.2) (2025-09-11)
+
+
+### Bug Fixes
+
+* pin react-test-renderer version to fix npm install issues ([#471](https://github.com/googlemaps/react-native-navigation-sdk/issues/471)) ([e3f0f81](https://github.com/googlemaps/react-native-navigation-sdk/commit/e3f0f81f632eb9b3c5ceb374abbc2ae7dc2382a5))
+
+## [0.10.1](https://github.com/googlemaps/react-native-navigation-sdk/compare/v0.10.0...v0.10.1) (2025-09-10)
+
+
+### Features
+
+* support latest rn versions ([#467](https://github.com/googlemaps/react-native-navigation-sdk/issues/467)) ([2b69764](https://github.com/googlemaps/react-native-navigation-sdk/commit/2b69764462c97a34ec14228410c4de7e189d2ee3))
+* upgrade to latest Android SDK 10.3.0 ([#470](https://github.com/googlemaps/react-native-navigation-sdk/issues/470)) ([85f678a](https://github.com/googlemaps/react-native-navigation-sdk/commit/85f678abd858e1e6f5fd1cb0f1d3fb54dd36d13b))
+
 ## [0.10.0](https://github.com/googlemaps/react-native-navigation-sdk/compare/v0.9.3...v0.10.0) (2025-08-11)
 
 
