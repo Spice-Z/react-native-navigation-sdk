@@ -160,14 +160,32 @@ public class NavViewModule extends ReactContextBaseJavaModule {
   public void addMarker(int viewId, ReadableMap markerOptionsMap, final Promise promise) {
     UiThreadUtil.runOnUiThread(
         () -> {
-          if (mNavViewManager.getGoogleMap(viewId) != null) {
-            Marker marker =
-                mNavViewManager
-                    .getFragmentForViewId(viewId)
-                    .getMapController()
-                    .addMarker(markerOptionsMap.toHashMap());
+          IMapViewFragment fragment = mNavViewManager.getFragmentForViewId(viewId);
+          if (fragment == null) {
+            promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
+            return;
+          }
 
-            promise.resolve(ObjectTranslationUtil.getMapFromMarker(marker));
+          Marker marker = fragment.getMapController().addMarker(markerOptionsMap.toHashMap());
+          promise.resolve(ObjectTranslationUtil.getMapFromMarker(marker));
+        });
+  }
+
+
+
+  @ReactMethod
+  public void moveMarker(int viewId, String markerId, ReadableMap newPosition, int duration,
+      final Promise promise) {
+    UiThreadUtil.runOnUiThread(
+        () -> {
+          if (mNavViewManager.getGoogleMap(viewId) != null) {
+            mNavViewManager
+                .getFragmentForViewId(viewId)
+                .getMapController()
+                .moveMarker(markerId, newPosition.toHashMap(), duration);
+            promise.resolve(true);
+          } else {
+            promise.reject("NO_MAP", "Map not found for viewId: " + viewId);
           }
         });
   }
@@ -176,16 +194,14 @@ public class NavViewModule extends ReactContextBaseJavaModule {
   public void addPolyline(int viewId, ReadableMap polylineOptionsMap, final Promise promise) {
     UiThreadUtil.runOnUiThread(
         () -> {
-          if (mNavViewManager.getGoogleMap(viewId) == null) {
+          IMapViewFragment fragment = mNavViewManager.getFragmentForViewId(viewId);
+          if (fragment == null) {
             promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
             return;
           }
-          Polyline polyline =
-              mNavViewManager
-                  .getFragmentForViewId(viewId)
-                  .getMapController()
-                  .addPolyline(polylineOptionsMap.toHashMap());
 
+          Polyline polyline =
+              fragment.getMapController().addPolyline(polylineOptionsMap.toHashMap());
           promise.resolve(ObjectTranslationUtil.getMapFromPolyline(polyline));
         });
   }
@@ -194,16 +210,13 @@ public class NavViewModule extends ReactContextBaseJavaModule {
   public void addPolygon(int viewId, ReadableMap polygonOptionsMap, final Promise promise) {
     UiThreadUtil.runOnUiThread(
         () -> {
-          if (mNavViewManager.getGoogleMap(viewId) == null) {
+          IMapViewFragment fragment = mNavViewManager.getFragmentForViewId(viewId);
+          if (fragment == null) {
             promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
             return;
           }
-          Polygon polygon =
-              mNavViewManager
-                  .getFragmentForViewId(viewId)
-                  .getMapController()
-                  .addPolygon(polygonOptionsMap.toHashMap());
 
+          Polygon polygon = fragment.getMapController().addPolygon(polygonOptionsMap.toHashMap());
           promise.resolve(ObjectTranslationUtil.getMapFromPolygon(polygon));
         });
   }
@@ -212,16 +225,13 @@ public class NavViewModule extends ReactContextBaseJavaModule {
   public void addCircle(int viewId, ReadableMap circleOptionsMap, final Promise promise) {
     UiThreadUtil.runOnUiThread(
         () -> {
-          if (mNavViewManager.getGoogleMap(viewId) == null) {
+          IMapViewFragment fragment = mNavViewManager.getFragmentForViewId(viewId);
+          if (fragment == null) {
             promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
             return;
           }
-          Circle circle =
-              mNavViewManager
-                  .getFragmentForViewId(viewId)
-                  .getMapController()
-                  .addCircle(circleOptionsMap.toHashMap());
 
+          Circle circle = fragment.getMapController().addCircle(circleOptionsMap.toHashMap());
           promise.resolve(ObjectTranslationUtil.getMapFromCircle(circle));
         });
   }
@@ -230,17 +240,37 @@ public class NavViewModule extends ReactContextBaseJavaModule {
   public void addGroundOverlay(int viewId, ReadableMap overlayOptionsMap, final Promise promise) {
     UiThreadUtil.runOnUiThread(
         () -> {
+          IMapViewFragment fragment = mNavViewManager.getFragmentForViewId(viewId);
+          if (fragment == null) {
+            promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
+            return;
+          }
+
+          GroundOverlay overlay =
+              fragment.getMapController().addGroundOverlay(overlayOptionsMap.toHashMap());
+          promise.resolve(ObjectTranslationUtil.getMapFromGroundOverlay(overlay));
+        });
+  }
+
+  @ReactMethod
+  public void addTextMarker(int viewId, ReadableMap textMarkerOptionsMap, final Promise promise) {
+    UiThreadUtil.runOnUiThread(
+        () -> {
           if (mNavViewManager.getGoogleMap(viewId) == null) {
             promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
             return;
           }
-          GroundOverlay overlay =
+          Marker textMarker =
               mNavViewManager
                   .getFragmentForViewId(viewId)
                   .getMapController()
-                  .addGroundOverlay(overlayOptionsMap.toHashMap());
+                  .addTextMarker(textMarkerOptionsMap.toHashMap());
 
-          promise.resolve(ObjectTranslationUtil.getMapFromGroundOverlay(overlay));
+          if (textMarker != null) {
+            promise.resolve(ObjectTranslationUtil.getMapFromMarker(textMarker));
+          } else {
+            promise.reject("TEXT_MARKER_ERROR", "Failed to create text marker");
+          }
         });
   }
 

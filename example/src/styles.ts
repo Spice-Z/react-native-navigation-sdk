@@ -42,7 +42,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    color: 'white',
   },
   controlButtons: {
     alignSelf: 'stretch',
@@ -50,6 +49,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     margin: 10,
     justifyContent: 'space-evenly',
+  },
+  pagerButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginHorizontal: 10,
+    marginTop: 10,
   },
   controlButtonGap: {
     height: 15,

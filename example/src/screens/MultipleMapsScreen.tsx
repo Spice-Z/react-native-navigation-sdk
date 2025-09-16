@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { Button, View } from 'react-native';
+import PagerView, {
+  type PagerViewOnPageSelectedEvent,
+} from 'react-native-pager-view';
 import Snackbar from 'react-native-snackbar';
 
 import {
@@ -56,6 +65,7 @@ enum OverlayType {
 }
 
 const MultipleMapsScreen = () => {
+  const [mapsVisible, setMapsVisible] = useState(true);
   const { arePermissionsApproved } = usePermissions();
   const [overlayType, setOverlayType] = useState<OverlayType>(OverlayType.None);
   const [mapViewController1, setMapViewController1] =
@@ -65,12 +75,14 @@ const MultipleMapsScreen = () => {
   const [navigationViewController1, setNavigationViewController1] =
     useState<NavigationViewController | null>(null);
   const [navigationInitialized, setNavigationInitialized] = useState(false);
+  const pagerRef = useRef<PagerView | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
   const { navigationController, addListeners, removeListeners } =
     useNavigation();
 
-  const onRouteChanged = useCallback(() => {
-    showSnackbar('Route Changed');
-  }, []);
+  useEffect(() => {
+    console.log('mapViewController1 changed', mapViewController1);
+  }, [mapViewController1]);
 
   const onArrival = useCallback(
     (event: ArrivalEvent) => {
@@ -87,10 +99,6 @@ const MultipleMapsScreen = () => {
     },
     [navigationController]
   );
-
-  const onTrafficUpdated = useCallback(() => {
-    showSnackbar('Traffic Updated');
-  }, []);
 
   const onNavigationReady = useCallback(async () => {
     if (navigationViewController1 != null) {
@@ -112,38 +120,6 @@ const MultipleMapsScreen = () => {
     []
   );
 
-  const onStartGuidance = useCallback(() => {
-    showSnackbar('Start Guidance');
-  }, []);
-
-  const onRouteStatusOk = useCallback(() => {
-    showSnackbar('Route created');
-  }, []);
-
-  const onRouteCancelled = useCallback(() => {
-    showSnackbar('Error: Route Cancelled');
-  }, []);
-
-  const onNoRouteFound = useCallback(() => {
-    showSnackbar('Error: No Route Found');
-  }, []);
-
-  const onNetworkError = useCallback(() => {
-    showSnackbar('Error: Network Error');
-  }, []);
-
-  const onStartingGuidanceError = useCallback(() => {
-    showSnackbar('Error: Starting Guidance Error');
-  }, []);
-
-  const onLocationDisabled = useCallback(() => {
-    showSnackbar('Error: Location Disabled');
-  }, []);
-
-  const onLocationUnknown = useCallback(() => {
-    showSnackbar('Error: Location Unknown');
-  }, []);
-
   const onLocationChanged = useCallback((location: Location) => {
     console.log('onLocationChanged: ', location);
   }, []);
@@ -159,66 +135,55 @@ const MultipleMapsScreen = () => {
     console.log('onRemainingTimeOrDistanceChanged', currentTimeAndDistance);
   }, [navigationController]);
 
-  const onRouteStatusResult = useCallback(
-    (routeStatus: RouteStatus) => {
-      switch (routeStatus) {
-        case RouteStatus.OK:
-          onRouteStatusOk();
-          break;
-        case RouteStatus.ROUTE_CANCELED:
-          onRouteCancelled();
-          break;
-        case RouteStatus.NO_ROUTE_FOUND:
-          onNoRouteFound();
-          break;
-        case RouteStatus.NETWORK_ERROR:
-          onNetworkError();
-          break;
-        case RouteStatus.LOCATION_DISABLED:
-          onLocationDisabled();
-          break;
-        case RouteStatus.LOCATION_UNKNOWN:
-          onLocationUnknown();
-          break;
-        default:
-          console.log('routeStatus: ' + routeStatus);
-          onStartingGuidanceError();
-      }
-    },
-    [
-      onRouteStatusOk,
-      onRouteCancelled,
-      onNoRouteFound,
-      onNetworkError,
-      onLocationDisabled,
-      onLocationUnknown,
-      onStartingGuidanceError,
-    ]
-  );
+  const onRouteStatusResult = useCallback((routeStatus: RouteStatus) => {
+    switch (routeStatus) {
+      case RouteStatus.OK:
+        showSnackbar('Route created');
+        break;
+      case RouteStatus.ROUTE_CANCELED:
+        showSnackbar('Error: Route Cancelled');
+        break;
+      case RouteStatus.NO_ROUTE_FOUND:
+        showSnackbar('Error: No Route Found');
+        break;
+      case RouteStatus.NETWORK_ERROR:
+        showSnackbar('Error: Network Error');
+        break;
+      case RouteStatus.LOCATION_DISABLED:
+        showSnackbar('Error: Location Disabled');
+        break;
+      case RouteStatus.LOCATION_UNKNOWN:
+        showSnackbar('Error: Location Unknown');
+        break;
+      case RouteStatus.DUPLICATE_WAYPOINTS_ERROR:
+        showSnackbar('Error: Consecutive duplicate waypoints are not allowed');
+        break;
+      default:
+        console.log('routeStatus: ' + routeStatus);
+        showSnackbar('Error: Starting Guidance Error');
+    }
+  }, []);
 
   const navigationCallbacks: NavigationCallbacks = useMemo(
     () => ({
-      onRouteChanged,
+      onRouteChanged: () => showSnackbar('Route Changed'),
       onArrival,
       onNavigationReady,
       onNavigationInitError,
       onLocationChanged,
       onRawLocationChanged,
-      onTrafficUpdated,
+      onTrafficUpdated: () => showSnackbar('Traffic Updated'),
       onRouteStatusResult,
-      onStartGuidance,
+      onStartGuidance: () => showSnackbar('Start Guidance'),
       onRemainingTimeOrDistanceChanged,
     }),
     [
-      onRouteChanged,
       onArrival,
       onNavigationReady,
       onNavigationInitError,
       onLocationChanged,
       onRawLocationChanged,
-      onTrafficUpdated,
       onRouteStatusResult,
-      onStartGuidance,
       onRemainingTimeOrDistanceChanged,
     ]
   );
@@ -244,17 +209,17 @@ const MultipleMapsScreen = () => {
     console.log('onRecenterButtonClick');
   }, []);
 
-  const onShowNavControlsClick = useCallback(() => {
+  const onShowNavControlsClick = () => {
     setOverlayType(OverlayType.NavControls);
-  }, []);
+  };
 
-  const onShowMapsControlsClick1 = useCallback(() => {
+  const onShowMapsControlsClick1 = () => {
     setOverlayType(OverlayType.MapControls1);
-  }, []);
+  };
 
-  const onShowMapsControlsClick2 = useCallback(() => {
+  const onShowMapsControlsClick2 = () => {
     setOverlayType(OverlayType.MapControls2);
-  }, []);
+  };
 
   const navigationViewCallbacks: NavigationViewCallbacks = useMemo(
     () => ({
@@ -324,72 +289,132 @@ const MultipleMapsScreen = () => {
     setOverlayType(OverlayType.None);
   };
 
+  const handlePageSelected = useCallback(
+    (event: PagerViewOnPageSelectedEvent) => {
+      setCurrentPage(event.nativeEvent.position);
+    },
+    []
+  );
+
+  const goToPage = useCallback((pageIndex: number) => {
+    setCurrentPage(pageIndex);
+    pagerRef.current?.setPage(pageIndex);
+  }, []);
+
   return arePermissionsApproved ? (
     <View style={styles.container}>
-      <NavigationView
-        androidStylingOptions={{
-          primaryDayModeThemeColor: '#34eba8',
-          headerDistanceValueTextColor: '#76b5c5',
-          headerInstructionsFirstRowTextSize: '20f',
-        }}
-        iOSStylingOptions={{
-          navigationHeaderPrimaryBackgroundColor: '#34eba8',
-          navigationHeaderDistanceValueTextColor: '#76b5c5',
-        }}
-        navigationViewCallbacks={navigationViewCallbacks}
-        mapViewCallbacks={mapViewCallbacks1}
-        onMapViewControllerCreated={setMapViewController1}
-        onNavigationViewControllerCreated={setNavigationViewController1}
+      <Button
+        title={mapsVisible ? 'Hide maps' : 'Show maps'}
+        onPress={() => setMapsVisible(v => !v)}
       />
 
-      <MapView
-        mapViewCallbacks={mapViewCallbacks2}
-        onMapViewControllerCreated={setMapViewController2}
-      />
-
-      {navigationViewController1 != null &&
-        navigationController != null &&
-        navigationInitialized && (
-          <OverlayModal
-            visible={overlayType === OverlayType.NavControls}
-            closeOverlay={closeOverlay}
-          >
-            <NavigationControls
-              navigationController={navigationController}
-              navigationViewController={navigationViewController1}
-              getCameraPosition={mapViewController1?.getCameraPosition}
-              onNavigationDispose={onNavigationDispose}
+      {mapsVisible && (
+        <React.Fragment>
+          <View style={styles.pagerButtons}>
+            <Button
+              title="Navigation page"
+              onPress={() => goToPage(0)}
+              disabled={currentPage === 0}
             />
-          </OverlayModal>
-        )}
+            <Button
+              title="Map page"
+              onPress={() => goToPage(1)}
+              disabled={currentPage === 1}
+            />
+          </View>
+          <PagerView
+            ref={pagerRef}
+            style={{ flex: 1 }}
+            initialPage={currentPage}
+            onPageSelected={handlePageSelected}
+          >
+            {/* Page 1: NavigationView */}
+            <View key="1" style={{ flex: 1 }}>
+              <NavigationView
+                key="navigationView1"
+                style={{ flex: 1 }}
+                androidStylingOptions={{
+                  primaryDayModeThemeColor: '#0076a8',
+                  primaryNightModeThemeColor: '#3400a8',
+                  secondaryDayModeThemeColor: '#0076a8',
+                  secondaryNightModeThemeColor: '#3400a8',
+                  headerLargeManeuverIconColor: '#f65308',
+                  headerSmallManeuverIconColor: '#f65308',
+                  headerDistanceValueTextColor: '#f65308',
+                  headerInstructionsFirstRowTextSize: '18f',
+                }}
+                iOSStylingOptions={{
+                  navigationHeaderPrimaryBackgroundColor: '#0076a8',
+                  navigationHeaderPrimaryBackgroundColorNightMode: '#3400a8',
+                  navigationHeaderSecondaryBackgroundColor: '#0076a8',
+                  navigationHeaderSecondaryBackgroundColorNightMode: '#3400a8',
+                  navigationHeaderDistanceValueTextColor: '#f65308',
+                }}
+                navigationViewCallbacks={navigationViewCallbacks}
+                mapViewCallbacks={mapViewCallbacks1}
+                onMapViewControllerCreated={setMapViewController1}
+                onNavigationViewControllerCreated={setNavigationViewController1}
+              />
+              <View style={styles.controlButtons}>
+                <Button
+                  title="Nav (Map 1)"
+                  onPress={onShowNavControlsClick}
+                  disabled={!navigationInitialized}
+                />
+                <Button title="Map 1" onPress={onShowMapsControlsClick1} />
+              </View>
+            </View>
+            {/* Page 2: MapView */}
+            <View key="2" style={{ flex: 1 }}>
+              <MapView
+                style={{ flex: 1 }}
+                mapViewCallbacks={mapViewCallbacks2}
+                onMapViewControllerCreated={setMapViewController2}
+              />
+              {currentPage === 1 && (
+                <View style={styles.controlButtons}>
+                  <Button title="Map 2" onPress={onShowMapsControlsClick2} />
+                </View>
+              )}
+            </View>
+          </PagerView>
 
-      {mapViewController1 != null && (
-        <OverlayModal
-          visible={overlayType === OverlayType.MapControls1}
-          closeOverlay={closeOverlay}
-        >
-          <MapsControls mapViewController={mapViewController1} />
-        </OverlayModal>
+          {/* Overlays and controls remain outside PagerView */}
+          {navigationViewController1 != null &&
+            navigationController != null &&
+            navigationInitialized && (
+              <OverlayModal
+                visible={overlayType === OverlayType.NavControls}
+                closeOverlay={closeOverlay}
+              >
+                <NavigationControls
+                  navigationController={navigationController}
+                  navigationViewController={navigationViewController1}
+                  getCameraPosition={mapViewController1?.getCameraPosition}
+                  onNavigationDispose={onNavigationDispose}
+                />
+              </OverlayModal>
+            )}
+
+          {mapViewController1 != null && (
+            <OverlayModal
+              visible={overlayType === OverlayType.MapControls1}
+              closeOverlay={closeOverlay}
+            >
+              <MapsControls mapViewController={mapViewController1} />
+            </OverlayModal>
+          )}
+
+          {mapViewController2 != null && (
+            <OverlayModal
+              visible={overlayType === OverlayType.MapControls2}
+              closeOverlay={closeOverlay}
+            >
+              <MapsControls mapViewController={mapViewController2} />
+            </OverlayModal>
+          )}
+        </React.Fragment>
       )}
-
-      {mapViewController2 != null && (
-        <OverlayModal
-          visible={overlayType === OverlayType.MapControls2}
-          closeOverlay={closeOverlay}
-        >
-          <MapsControls mapViewController={mapViewController2} />
-        </OverlayModal>
-      )}
-
-      <View style={styles.controlButtons}>
-        <Button
-          title="Nav (Map 1)"
-          onPress={onShowNavControlsClick}
-          disabled={!navigationInitialized}
-        />
-        <Button title="Map 1" onPress={onShowMapsControlsClick1} />
-        <Button title="Map 2" onPress={onShowMapsControlsClick2} />
-      </View>
     </View>
   ) : (
     <React.Fragment />

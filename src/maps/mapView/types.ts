@@ -108,6 +108,31 @@ export interface PolylineOptions {
 }
 
 /**
+ * Defines TextMarkerOptions for a text marker on the map.
+ * Text markers display text with a customizable background rectangle as a marker icon.
+ */
+export interface TextMarkerOptions {
+  /** The text content to display on the map. */
+  text: string;
+  /** The position on the map where the text marker will be placed. */
+  position: LatLng;
+  /** The font size of the text in pixels. */
+  fontSize: number;
+  /** The color of the text in hex format (e.g., '#000000'). */
+  fontColor: string;
+  /** The background color of the circle in hex format (e.g., '#FFFFFF'). */
+  backgroundColor: string;
+  /** The padding around the text in pixels. */
+  padding: number;
+  /** The border color of the circle in hex format (e.g., '#000000'). */
+  borderColor: string;
+  /** A text string that's displayed in an info window when the user taps the marker. */
+  title?: string;
+  /** Optional label text to display below the circle on a rectangle background. */
+  label?: string;
+}
+
+/**
  * Defines the styling of the base map.
  */
 export enum MapType {
@@ -144,7 +169,7 @@ export enum FragmentType {
   /** Regular Google map view without navigation */
   MAP = 0,
   /** Google map view with navigation */
-  NAVIGATION,
+  NAVIGATION = 1,
 }
 
 /**
@@ -264,6 +289,15 @@ export interface MapViewController {
   removeMarker(id: string): void;
 
   /**
+   * Moves a marker to a new position with smooth movement.
+   *
+   * @param id - String specifying the id property of the marker
+   * @param position - The new position for the marker
+   * @param duration - Duration of the animation in milliseconds (default: 1000)
+   */
+  moveMarker(id: string, position: LatLng, duration?: number): Promise<boolean>;
+
+  /**
    * Removes a polyline from the map.
    *
    * @param id - String specifying the id property of the polyline
@@ -283,6 +317,15 @@ export interface MapViewController {
    * @param id - String specifying the id property of the circle
    */
   removeCircle(id: string): void;
+
+  /**
+   * Add a text marker to the map.
+   * Text markers display text with a customizable background rectangle as a marker icon.
+   *
+   * @param textMarkerOptions - Object specifying properties of the text marker,
+   *                           including text content, position, styling options.
+   */
+  addTextMarker(textMarkerOptions: TextMarkerOptions): Promise<Marker>;
 
   /**
    * Enable or disable the indoor map layer.
