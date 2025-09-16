@@ -42,9 +42,14 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import android.animation.ValueAnimator;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.animation.AccelerateDecelerateInterpolator;
 
 public class MapViewController {
   private GoogleMap mGoogleMap;
@@ -55,6 +60,8 @@ public class MapViewController {
   private final List<Polygon> polygonList = new ArrayList<>();
   private final List<GroundOverlay> groundOverlayList = new ArrayList<>();
   private final List<Circle> circleList = new ArrayList<>();
+  private final HashMap<String, ValueAnimator> markerAnimators = new HashMap<>(); // Store animators for cleanup
+  private final HashMap<String, Circle> markerPulseCircles = new HashMap<>(); // Store pulse circles for cleanup
   private String style = "";
 
   public void initialize(GoogleMap googleMap, Supplier<Activity> activitySupplier) {
@@ -135,17 +142,23 @@ public class MapViewController {
     String imagePath = CollectionUtil.getString("imgPath", optionsMap);
     String title = CollectionUtil.getString("title", optionsMap);
     String snippet = CollectionUtil.getString("snippet", optionsMap);
+    String color = CollectionUtil.getString("color", optionsMap);
     float alpha = Double.valueOf(CollectionUtil.getDouble("alpha", optionsMap, 1)).floatValue();
     float rotation =
         Double.valueOf(CollectionUtil.getDouble("rotation", optionsMap, 0)).floatValue();
     boolean draggable = CollectionUtil.getBool("draggable", optionsMap, false);
     boolean flat = CollectionUtil.getBool("flat", optionsMap, false);
     boolean visible = CollectionUtil.getBool("visible", optionsMap, true);
+    boolean animateOnAdd = CollectionUtil.getBool("animateOnAdd", optionsMap, true); // Default to true for pulse
 
     MarkerOptions options = new MarkerOptions();
     if (imagePath != null && !imagePath.isEmpty()) {
       BitmapDescriptor icon = BitmapDescriptorFactory.fromAsset(imagePath);
       options.icon(icon);
+    } else {
+      // Only apply color if no custom image is provided
+      float markerHue = getMarkerHueFromColor(color);
+      options.icon(BitmapDescriptorFactory.defaultMarker(markerHue));
     }
 
     options.position(
@@ -166,6 +179,10 @@ public class MapViewController {
     options.visible(visible);
 
     Marker marker = mGoogleMap.addMarker(options);
+    // Apply pulse animation to the newly added marker if enabled
+    if (marker != null && animateOnAdd) {
+      animateMarkerPulse(marker, color);
+    }
 
     markerList.add(marker);
 
@@ -304,9 +321,113 @@ public class MapViewController {
     return groundOverlay;
   }
 
+  /**
+   * Animates a marker to a new position with smooth movement.
+   * Also moves the associated pulse circle if it exists.
+   * 
+   * @param markerId    The ID of the marker to move
+   * @param newPosition The new position to move the marker to
+   * @param duration    The duration of the animation in milliseconds
+   */
+  public void animateMarkerToPosition(String markerId, Map<String, Object> newPosition, int duration) {
+    if (mGoogleMap == null) {
+      return;
+    }
+
+    UiThreadUtil.runOnUiThread(() -> {
+      // Find the marker
+      Marker markerToMove = null;
+      for (Marker marker : markerList) {
+        if (marker.getId().equals(markerId)) {
+          markerToMove = marker;
+          break;
+        }
+      }
+
+      if (markerToMove == null) {
+        return; // Marker not found
+      }
+
+      final Marker finalMarker = markerToMove;
+      final LatLng startPosition = finalMarker.getPosition();
+      final LatLng endPosition = ObjectTranslationUtil.getLatLngFromMap(newPosition);
+
+      // Get the pulse circle if it exists
+      final Circle pulseCircle = markerPulseCircles.get(markerId);
+
+      // Create smooth animation
+      ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+      animator.setDuration(duration > 0 ? duration : 1000); // Default 1 second
+      animator.setInterpolator(new AccelerateDecelerateInterpolator());
+
+      animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+        @Override
+        public void onAnimationUpdate(ValueAnimator animation) {
+          float progress = (float) animation.getAnimatedValue();
+
+          // Calculate intermediate position using linear interpolation
+          double lat = startPosition.latitude + (endPosition.latitude - startPosition.latitude) * progress;
+          double lng = startPosition.longitude + (endPosition.longitude - startPosition.longitude) * progress;
+          LatLng intermediatePosition = new LatLng(lat, lng);
+
+          // Update marker position
+          finalMarker.setPosition(intermediatePosition);
+
+          // Update pulse circle position if it exists
+          if (pulseCircle != null) {
+            pulseCircle.setCenter(intermediatePosition);
+          }
+        }
+      });
+
+      animator.start();
+    });
+  }
+
+  /**
+   * Immediately moves a marker to a new position without animation.
+   * Also moves the associated pulse circle if it exists.
+   * 
+   * @param markerId    The ID of the marker to move
+   * @param newPosition The new position to move the marker to
+   */
+  public void moveMarker(String markerId, Map<String, Object> newPosition) {
+    if (mGoogleMap == null) {
+      return;
+    }
+
+    UiThreadUtil.runOnUiThread(() -> {
+      // Find the marker
+      Marker markerToMove = null;
+      for (Marker marker : markerList) {
+        if (marker.getId().equals(markerId)) {
+          markerToMove = marker;
+          break;
+        }
+      }
+
+      if (markerToMove == null) {
+        return; // Marker not found
+      }
+
+      LatLng newLatLng = ObjectTranslationUtil.getLatLngFromMap(newPosition);
+
+      // Update marker position
+      markerToMove.setPosition(newLatLng);
+
+      // Update pulse circle position if it exists
+      Circle pulseCircle = markerPulseCircles.get(markerId);
+      if (pulseCircle != null) {
+        pulseCircle.setCenter(newLatLng);
+      }
+    });
+  }
+
   public void removeMarker(String id) {
     UiThreadUtil.runOnUiThread(
         () -> {
+          // Stop any animations for this marker
+          stopMarkerAnimation(id);
           for (Marker m : markerList) {
             if (m.getId().equals(id)) {
               m.remove();
@@ -518,6 +639,18 @@ public class MapViewController {
       return;
     }
 
+    // Stop all marker animations
+    for (ValueAnimator animator : markerAnimators.values()) {
+      animator.cancel();
+    }
+    markerAnimators.clear();
+
+    // Remove all pulse circles
+    for (Circle circle : markerPulseCircles.values()) {
+      circle.remove();
+    }
+    markerPulseCircles.clear();
+
     mGoogleMap.clear();
   }
 
@@ -578,5 +711,205 @@ public class MapViewController {
     }
 
     return new LatLng(lat, lng);
+  }
+
+  /**
+   * Maps color string to BitmapDescriptorFactory HUE constant.
+   * 
+   * @param color Color name string (e.g., "red", "blue", "green")
+   * @return The corresponding HUE value, defaults to HUE_RED if color is null or
+   *         unrecognized
+   */
+  private float getMarkerHueFromColor(String color) {
+    if (color == null) {
+      return BitmapDescriptorFactory.HUE_RED; // Default color
+    }
+
+    switch (color.toLowerCase()) {
+      case "azure":
+        return BitmapDescriptorFactory.HUE_AZURE;
+      case "blue":
+        return BitmapDescriptorFactory.HUE_BLUE;
+      case "cyan":
+        return BitmapDescriptorFactory.HUE_CYAN;
+      case "green":
+        return BitmapDescriptorFactory.HUE_GREEN;
+      case "magenta":
+        return BitmapDescriptorFactory.HUE_MAGENTA;
+      case "orange":
+        return BitmapDescriptorFactory.HUE_ORANGE;
+      case "red":
+        return BitmapDescriptorFactory.HUE_RED;
+      case "rose":
+        return BitmapDescriptorFactory.HUE_ROSE;
+      case "violet":
+        return BitmapDescriptorFactory.HUE_VIOLET;
+      case "yellow":
+        return BitmapDescriptorFactory.HUE_YELLOW;
+      default:
+        return BitmapDescriptorFactory.HUE_RED; // Default to red for unrecognized colors
+    }
+  }
+
+  /**
+   * Gets the RGB color values for the pulse circle based on the marker color.
+   * Returns an array with [strokeColor, fillColor].
+   * 
+   * @param markerColor The color name of the marker
+   * @return Array containing stroke and fill colors for the pulse circle
+   */
+  private int[] getPulseColorFromMarkerColor(String markerColor) {
+    int strokeColor;
+    int fillColor;
+
+    if (markerColor == null) {
+      markerColor = "red"; // Default
+    }
+
+    // Map marker colors to RGB values for the pulse circle
+    switch (markerColor.toLowerCase()) {
+      case "azure":
+        strokeColor = Color.parseColor("#007FFF"); // Azure blue
+        break;
+      case "blue":
+        strokeColor = Color.parseColor("#4285F4"); // Google blue
+        break;
+      case "cyan":
+        strokeColor = Color.parseColor("#00BCD4"); // Cyan
+        break;
+      case "green":
+        strokeColor = Color.parseColor("#4CAF50"); // Green
+        break;
+      case "magenta":
+        strokeColor = Color.parseColor("#E91E63"); // Magenta
+        break;
+      case "orange":
+        strokeColor = Color.parseColor("#FF9800"); // Orange
+        break;
+      case "red":
+        strokeColor = Color.parseColor("#F44336"); // Red
+        break;
+      case "rose":
+        strokeColor = Color.parseColor("#FF1493"); // Rose/Deep pink
+        break;
+      case "violet":
+        strokeColor = Color.parseColor("#9C27B0"); // Violet/Purple
+        break;
+      case "yellow":
+        strokeColor = Color.parseColor("#FFEB3B"); // Yellow
+        break;
+      default:
+        strokeColor = Color.parseColor("#F44336"); // Default to red
+        break;
+    }
+
+    // Fill color is the same as stroke but with transparency
+    int r = Color.red(strokeColor);
+    int g = Color.green(strokeColor);
+    int b = Color.blue(strokeColor);
+    fillColor = Color.argb(51, r, g, b); // 20% opacity for fill
+
+    return new int[] { strokeColor, fillColor };
+  }
+
+  /**
+   * Animates a marker with a pulsing circle effect underneath.
+   * Creates a circle at the marker's position that pulses in radius and opacity.
+   * 
+   * @param marker      The marker to animate
+   * @param markerColor The color of the marker (used to color the pulse circle)
+   */
+  private void animateMarkerPulse(final Marker marker, String markerColor) {
+    if (marker == null || mGoogleMap == null)
+      return;
+
+    final long pulseDuration = 1500; // Duration for one pulse cycle
+    final float minRadius = 20f; // Minimum circle radius in meters
+    final float maxRadius = 60f; // Maximum circle radius in meters
+
+    // Stop any existing animation for this marker
+    stopMarkerAnimation(marker.getId());
+
+    // Determine the pulse circle color based on marker color
+    final int[] pulseColors = getPulseColorFromMarkerColor(markerColor);
+    final int baseStrokeColor = pulseColors[0];
+    final int baseFillColor = pulseColors[1];
+
+    // Create a circle at the marker's position
+    CircleOptions circleOptions = new CircleOptions()
+        .center(marker.getPosition())
+        .radius(minRadius)
+        .strokeColor(baseStrokeColor)
+        .strokeWidth(3f)
+        .fillColor(baseFillColor);
+
+    final Circle pulseCircle = mGoogleMap.addCircle(circleOptions);
+
+    // Store the circle reference for cleanup
+    markerPulseCircles.put(marker.getId(), pulseCircle);
+
+    // Create the pulse animation using ValueAnimator
+    ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+    animator.setDuration(pulseDuration);
+    animator.setRepeatCount(ValueAnimator.INFINITE); // Loop infinitely
+    animator.setRepeatMode(ValueAnimator.RESTART); // Restart animation from beginning
+    animator.setInterpolator(new AccelerateDecelerateInterpolator());
+
+    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+      @Override
+      public void onAnimationUpdate(ValueAnimator animation) {
+        float progress = (float) animation.getAnimatedValue();
+
+        try {
+          // Animate radius from min to max
+          float currentRadius = minRadius + (maxRadius - minRadius) * progress;
+          pulseCircle.setRadius(currentRadius);
+
+          // Animate alpha from 0.8 to 0 (fade out as it expands)
+          float alpha = 0.8f * (1f - progress);
+
+          // Extract RGB values from the base colors
+          int r = Color.red(baseStrokeColor);
+          int g = Color.green(baseStrokeColor);
+          int b = Color.blue(baseStrokeColor);
+
+          int strokeColor = Color.argb((int) (alpha * 255), r, g, b);
+          int fillColor = Color.argb((int) (alpha * 127), r, g, b); // 50% of stroke alpha for fill
+
+          pulseCircle.setStrokeColor(strokeColor);
+          pulseCircle.setFillColor(fillColor);
+        } catch (Exception e) {
+          // Circle or marker might have been removed, stop the animation
+          animation.cancel();
+        }
+      }
+    });
+
+    // Store the animator for later cleanup
+    markerAnimators.put(marker.getId(), animator);
+
+    // Start the animation
+    animator.start();
+  }
+
+  /**
+   * Stops the animation for a specific marker and removes its pulse circle.
+   * 
+   * @param markerId The ID of the marker whose animation should be stopped
+   */
+  private void stopMarkerAnimation(String markerId) {
+    // Stop the animator
+    ValueAnimator animator = markerAnimators.get(markerId);
+    if (animator != null) {
+      animator.cancel();
+      markerAnimators.remove(markerId);
+    }
+
+    // Remove the pulse circle
+    Circle pulseCircle = markerPulseCircles.get(markerId);
+    if (pulseCircle != null) {
+      pulseCircle.remove();
+      markerPulseCircles.remove(markerId);
+    }
   }
 }

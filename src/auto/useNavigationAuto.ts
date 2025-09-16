@@ -16,7 +16,7 @@
 
 import { NativeModules } from 'react-native';
 import type { MapViewAutoController, NavigationAutoCallbacks } from './types';
-import { useModuleListeners, type Location } from '../shared';
+import { useModuleListeners, type LatLng, type Location } from '../shared';
 import type {
   MapType,
   CircleOptions,
@@ -190,6 +190,22 @@ export const useNavigationAuto = (): {
       setPadding: (padding: Padding) => {
         const { top = 0, left = 0, bottom = 0, right = 0 } = padding;
         return NavAutoModule.setPadding(top, left, bottom, right);
+      },
+
+      moveMarker: (markerId: string, position: LatLng) => {
+        return NavAutoModule.moveMarker(markerId, position);
+      },
+
+      animateMarkerToPosition: (
+        markerId: string,
+        position: LatLng,
+        duration: number
+      ) => {
+        return NavAutoModule.animateMarkerToPosition(
+          markerId,
+          position,
+          duration
+        );
       },
     }),
     [moduleListenersHandler]

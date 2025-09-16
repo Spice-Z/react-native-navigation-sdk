@@ -172,6 +172,40 @@ public class NavViewModule extends ReactContextBaseJavaModule {
         });
   }
 
+
+  @ReactMethod
+  public void moveMarker(int viewId, String markerId, ReadableMap newPosition, final Promise promise) {
+    UiThreadUtil.runOnUiThread(
+        () -> {
+          if (mNavViewManager.getGoogleMap(viewId) != null) {
+            mNavViewManager
+                .getFragmentForViewId(viewId)
+                .getMapController()
+                .moveMarker(markerId, newPosition.toHashMap());
+            promise.resolve(true);
+          } else {
+            promise.reject("NO_MAP", "Map not found for viewId: " + viewId);
+          }
+        });
+  }
+
+  @ReactMethod
+  public void animateMarkerToPosition(int viewId, String markerId, ReadableMap newPosition, int duration,
+      final Promise promise) {
+    UiThreadUtil.runOnUiThread(
+        () -> {
+          if (mNavViewManager.getGoogleMap(viewId) != null) {
+            mNavViewManager
+                .getFragmentForViewId(viewId)
+                .getMapController()
+                .animateMarkerToPosition(markerId, newPosition.toHashMap(), duration);
+            promise.resolve(true);
+          } else {
+            promise.reject("NO_MAP", "Map not found for viewId: " + viewId);
+          }
+        });
+  }
+
   @ReactMethod
   public void addPolyline(int viewId, ReadableMap polylineOptionsMap, final Promise promise) {
     UiThreadUtil.runOnUiThread(

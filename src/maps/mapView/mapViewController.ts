@@ -15,7 +15,7 @@
  */
 
 import { NativeModules } from 'react-native';
-import type { Location } from '../../shared/types';
+import type { LatLng, Location } from '../../shared/types';
 import { commands, sendCommand } from '../../shared/viewManager';
 import type {
   CameraPosition,
@@ -78,6 +78,23 @@ export const getMapViewController = (viewId: number): MapViewController => {
 
     removeMarker: (id: string) => {
       sendCommand(viewId, commands.removeMarker, [id]);
+    },
+
+    moveMarker: async (id: string, position: LatLng): Promise<boolean> => {
+      return await NavViewModule.moveMarker(viewId, id, position);
+    },
+
+    animateMarkerToPosition: async (
+      id: string,
+      position: LatLng,
+      duration: number = 1000
+    ): Promise<boolean> => {
+      return await NavViewModule.animateMarkerToPosition(
+        viewId,
+        id,
+        position,
+        duration
+      );
     },
 
     removePolyline: (id: string) => {

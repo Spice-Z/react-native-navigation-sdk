@@ -53,6 +53,18 @@ export interface MarkerOptions {
   position: LatLng;
   /** Path to a local image asset that should be displayed in the marker instead of using the default marker pin. */
   imgPath?: string;
+  /** Color of the default marker pin. Available values: 'azure', 'blue', 'cyan', 'green', 'magenta', 'orange', 'red', 'rose', 'violet', 'yellow'. Defaults to 'red'. Note: This is ignored if imgPath is provided. */
+  color?:
+    | 'azure'
+    | 'blue'
+    | 'cyan'
+    | 'green'
+    | 'magenta'
+    | 'orange'
+    | 'red'
+    | 'rose'
+    | 'violet'
+    | 'yellow';
   /** A text string that's displayed in an info window when the user taps the marker. You can change this value at any time. */
   title?: string;
   /** Additional text that's displayed below the title. You can change this value at any time. */
@@ -67,6 +79,8 @@ export interface MarkerOptions {
   flat?: boolean;
   /** Indicates the visibility of the polygon. True by default. */
   visible?: boolean;
+  /** When true, creates a pulsing circle animation underneath the marker when it's added to the map. The circle expands and fades out repeatedly, creating a ripple effect. The circle color matches the marker color. The animation continues until the marker is removed. Defaults to true. Android only. */
+  animateOnAdd?: boolean;
 }
 
 /**
@@ -262,6 +276,29 @@ export interface MapViewController {
    * @param id - String specifying the id property of the marker
    */
   removeMarker(id: string): void;
+
+  /**
+   * Moves a marker to a new position immediately without animation.
+   * Also moves the associated pulse circle if it exists.
+   *
+   * @param id - String specifying the id property of the marker
+   * @param position - The new position for the marker
+   */
+  moveMarker(id: string, position: LatLng): Promise<boolean>;
+
+  /**
+   * Animates a marker to a new position with smooth movement.
+   * Also moves the associated pulse circle if it exists.
+   *
+   * @param id - String specifying the id property of the marker
+   * @param position - The new position for the marker
+   * @param duration - Duration of the animation in milliseconds (default: 1000)
+   */
+  animateMarkerToPosition(
+    id: string,
+    position: LatLng,
+    duration?: number
+  ): Promise<boolean>;
 
   /**
    * Removes a polyline from the map.
