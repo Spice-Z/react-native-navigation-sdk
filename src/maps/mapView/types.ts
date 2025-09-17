@@ -122,6 +122,45 @@ export interface PolylineOptions {
 }
 
 /**
+ * Defines TextMarkerOptions for a text marker on the map.
+ * Text markers display text with a customizable background rectangle as a marker icon.
+ */
+export interface TextMarkerOptions {
+  /** The text content to display on the map. */
+  text: string;
+  /** The position on the map where the text marker will be placed. */
+  position: LatLng;
+  /** The font size of the text in pixels. Defaults to 14. */
+  fontSize?: number;
+  /** The color of the text in hex format (e.g., '#000000'). Defaults to black. */
+  fontColor?: string;
+  /** The background color of the rectangle in hex format (e.g., '#FFFFFF'). Defaults to white. */
+  backgroundColor?: string;
+  /** The padding around the text in pixels. Defaults to 8. */
+  padding?: number;
+  /** The corner radius for rounded corners in pixels. Defaults to 4. */
+  cornerRadius?: number;
+  /** Whether to use bold font. Defaults to false. */
+  bold?: boolean;
+  /** Whether the text marker is visible. Defaults to true. */
+  visible?: boolean;
+  /** Sets the opacity of the marker. Defaults to 1.0. */
+  alpha?: number;
+  /** The rotation of the marker in degrees clockwise. Defaults to 0. */
+  rotation?: number;
+  /** Indicates whether this marker is draggable. Defaults to false. */
+  draggable?: boolean;
+  /** Indicates whether this marker should be flat against the map. Defaults to false. */
+  flat?: boolean;
+  /** A text string that's displayed in an info window when the user taps the marker. */
+  title?: string;
+  /** Additional text that's displayed below the title. */
+  snippet?: string;
+  /** When true, creates a pulsing circle animation underneath the marker. Defaults to false. Android only. */
+  animateOnAdd?: boolean;
+}
+
+/**
  * Defines the styling of the base map.
  */
 export enum MapType {
@@ -320,6 +359,15 @@ export interface MapViewController {
    * @param id - String specifying the id property of the circle
    */
   removeCircle(id: string): void;
+
+  /**
+   * Add a text marker to the map.
+   * Text markers display text with a customizable background rectangle as a marker icon.
+   *
+   * @param textMarkerOptions - Object specifying properties of the text marker,
+   *                           including text content, position, styling options.
+   */
+  addTextMarker(textMarkerOptions: TextMarkerOptions): Promise<Marker>;
 
   /**
    * Enable or disable the indoor map layer.

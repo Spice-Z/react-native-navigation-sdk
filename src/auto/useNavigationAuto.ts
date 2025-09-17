@@ -30,6 +30,7 @@ import type {
   CameraPosition,
   UISettings,
   Padding,
+  TextMarkerOptions,
 } from '../maps';
 import { useMemo } from 'react';
 
@@ -206,6 +207,12 @@ export const useNavigationAuto = (): {
           position,
           duration
         );
+      },
+
+      addTextMarker: async (
+        textMarkerOptions: TextMarkerOptions
+      ): Promise<Marker> => {
+        return await NavAutoModule.addTextMarker(textMarkerOptions);
       },
     }),
     [moduleListenersHandler]

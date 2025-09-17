@@ -15,7 +15,12 @@ package com.google.android.react.navsdk;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Typeface;
 import androidx.core.util.Supplier;
 import com.facebook.react.bridge.UiThreadUtil;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -478,6 +483,85 @@ public class MapViewController {
     }
   }
 
+  /**
+   * Adds a text marker on the map using a custom bitmap with text and background.
+   *
+   * @param optionsMap Configuration map containing text, position, styling options
+   * @return The created Marker containing the text with background
+   */
+  public Marker addTextMarker(Map<String, Object> optionsMap) {
+    if (mGoogleMap == null) {
+      return null;
+    }
+
+    // Extract text marker parameters
+    String text = CollectionUtil.getString("text", optionsMap);
+    if (text == null || text.isEmpty()) {
+      return null; // Text is required
+    }
+
+    // Position parameters
+    LatLng position = ObjectTranslationUtil.getLatLngFromMap((Map<String, Object>) optionsMap.get("position"));
+    if (position == null) {
+      return null; // Position is required
+    }
+
+    // Styling parameters with defaults
+    float fontSize = (float) CollectionUtil.getDouble("fontSize", optionsMap, 14.0);
+    String fontColor = CollectionUtil.getString("fontColor", optionsMap);
+    int textColor = fontColor != null ? Color.parseColor(fontColor) : Color.BLACK;
+    
+    String backgroundColor = CollectionUtil.getString("backgroundColor", optionsMap);
+    int bgColor = backgroundColor != null ? Color.parseColor(backgroundColor) : Color.WHITE;
+    
+    float padding = (float) CollectionUtil.getDouble("padding", optionsMap, 8.0);
+    float cornerRadius = (float) CollectionUtil.getDouble("cornerRadius", optionsMap, 4.0);
+    boolean bold = CollectionUtil.getBool("bold", optionsMap, false);
+    boolean visible = CollectionUtil.getBool("visible", optionsMap, true);
+    boolean clickable = CollectionUtil.getBool("clickable", optionsMap, true);
+    float alpha = (float) CollectionUtil.getDouble("alpha", optionsMap, 1.0);
+    float rotation = (float) CollectionUtil.getDouble("rotation", optionsMap, 0.0);
+    boolean draggable = CollectionUtil.getBool("draggable", optionsMap, false);
+    boolean flat = CollectionUtil.getBool("flat", optionsMap, false);
+    boolean animateOnAdd = CollectionUtil.getBool("animateOnAdd", optionsMap, false);
+
+    // Generate bitmap with text and background
+    BitmapDescriptor bitmapDescriptor = createTextBitmap(text, textColor, bgColor, fontSize, padding, cornerRadius, bold);
+    if (bitmapDescriptor == null) {
+      return null;
+    }
+
+    // Create marker options with custom text bitmap
+    MarkerOptions options = new MarkerOptions();
+    options.icon(bitmapDescriptor);
+    options.position(position);
+    options.visible(visible);
+    options.alpha(alpha);
+    options.rotation(rotation);
+    options.draggable(draggable);
+    options.flat(flat);
+
+    // Add optional title and snippet if provided
+    String title = CollectionUtil.getString("title", optionsMap);
+    String snippet = CollectionUtil.getString("snippet", optionsMap);
+    if (title != null) {
+      options.title(title);
+    }
+    if (snippet != null) {
+      options.snippet(snippet);
+    }
+
+    Marker textMarker = mGoogleMap.addMarker(options);
+    
+    // Apply pulse animation if enabled
+    if (textMarker != null && animateOnAdd) {
+      animateMarkerPulse(textMarker, null); // No color needed for text markers
+    }
+
+    markerList.add(textMarker);
+    return textMarker;
+  }
+
   public void setMapStyle(String url) {
     Executors.newSingleThreadExecutor()
         .execute(
@@ -650,6 +734,7 @@ public class MapViewController {
       circle.remove();
     }
     markerPulseCircles.clear();
+
 
     mGoogleMap.clear();
   }
@@ -912,4 +997,69 @@ public class MapViewController {
       markerPulseCircles.remove(markerId);
     }
   }
+
+  /**
+   * Creates a bitmap with text on a background rectangle.
+   * 
+   * @param text         The text to render
+   * @param textColor    The color of the text
+   * @param bgColor      The background color
+   * @param fontSize     The font size in pixels
+   * @param padding      The padding around the text
+   * @param cornerRadius The corner radius for rounded corners
+   * @param bold         Whether to use bold font
+   * @return BitmapDescriptor containing the rendered text with background
+   */
+  private BitmapDescriptor createTextBitmap(String text, int textColor, int bgColor, 
+                                            float fontSize, float padding, float cornerRadius, boolean bold) {
+    try {
+      // Create paint for text
+      Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      textPaint.setColor(textColor);
+      textPaint.setTextSize(fontSize);
+      if (bold) {
+        textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+      } else {
+        textPaint.setTypeface(Typeface.DEFAULT);
+      }
+
+      // Create paint for background
+      Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      bgPaint.setColor(bgColor);
+
+      // Measure text dimensions
+      Rect textBounds = new Rect();
+      textPaint.getTextBounds(text, 0, text.length(), textBounds);
+      
+      int textWidth = textBounds.width();
+      int textHeight = textBounds.height();
+      
+      // Calculate bitmap dimensions with padding
+      int bitmapWidth = (int) (textWidth + (padding * 2));
+      int bitmapHeight = (int) (textHeight + (padding * 2));
+      
+      // Create bitmap and canvas
+      Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+      Canvas canvas = new Canvas(bitmap);
+      
+      // Draw background rectangle with rounded corners
+      if (cornerRadius > 0) {
+        canvas.drawRoundRect(0, 0, bitmapWidth, bitmapHeight, cornerRadius, cornerRadius, bgPaint);
+      } else {
+        canvas.drawRect(0, 0, bitmapWidth, bitmapHeight, bgPaint);
+      }
+      
+      // Draw text centered on the background
+      float textX = padding;
+      float textY = padding + textHeight; // textHeight to account for baseline
+      
+      canvas.drawText(text, textX, textY, textPaint);
+      
+      return BitmapDescriptorFactory.fromBitmap(bitmap);
+    } catch (Exception e) {
+      // Return null if bitmap creation fails
+      return null;
+    }
+  }
+
 }

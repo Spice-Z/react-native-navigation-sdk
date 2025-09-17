@@ -278,6 +278,28 @@ public class NavViewModule extends ReactContextBaseJavaModule {
         });
   }
 
+  @ReactMethod
+  public void addTextMarker(int viewId, ReadableMap textMarkerOptionsMap, final Promise promise) {
+    UiThreadUtil.runOnUiThread(
+        () -> {
+          if (mNavViewManager.getGoogleMap(viewId) == null) {
+            promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
+            return;
+          }
+          Marker textMarker =
+              mNavViewManager
+                  .getFragmentForViewId(viewId)
+                  .getMapController()
+                  .addTextMarker(textMarkerOptionsMap.toHashMap());
+
+          if (textMarker != null) {
+            promise.resolve(ObjectTranslationUtil.getMapFromMarker(textMarker));
+          } else {
+            promise.reject("TEXT_MARKER_ERROR", "Failed to create text marker");
+          }
+        });
+  }
+
   @Override
   public boolean canOverrideExistingModule() {
     return true;

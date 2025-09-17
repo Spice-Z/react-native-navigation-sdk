@@ -33,6 +33,7 @@ import type {
   Padding,
   PolygonOptions,
   PolylineOptions,
+  TextMarkerOptions,
 } from './types';
 const { NavViewModule } = NativeModules;
 
@@ -107,6 +108,12 @@ export const getMapViewController = (viewId: number): MapViewController => {
 
     removeCircle: (id: string) => {
       sendCommand(viewId, commands.removeCircle, [id]);
+    },
+
+    addTextMarker: async (
+      textMarkerOptions: TextMarkerOptions
+    ): Promise<Marker> => {
+      return await NavViewModule.addTextMarker(viewId, textMarkerOptions);
     },
 
     setIndoorEnabled: (isOn: boolean) => {
