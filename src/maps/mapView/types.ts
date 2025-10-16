@@ -124,24 +124,12 @@ export interface TextMarkerOptions {
   backgroundColor?: string;
   /** The padding around the text in pixels. Defaults to 8. */
   padding?: number;
-  /** The corner radius for rounded corners in pixels. Defaults to 4. */
-  cornerRadius?: number;
-  /** Whether to use bold font. Defaults to false. */
-  bold?: boolean;
-  /** Whether the text marker is visible. Defaults to true. */
-  visible?: boolean;
-  /** Sets the opacity of the marker. Defaults to 1.0. */
-  alpha?: number;
-  /** The rotation of the marker in degrees clockwise. Defaults to 0. */
-  rotation?: number;
-  /** Indicates whether this marker is draggable. Defaults to false. */
-  draggable?: boolean;
-  /** Indicates whether this marker should be flat against the map. Defaults to false. */
-  flat?: boolean;
   /** A text string that's displayed in an info window when the user taps the marker. */
   title?: string;
-  /** Additional text that's displayed below the title. */
-  snippet?: string;
+  /** The border color of the circle in hex format (e.g., '#000000'). Defaults to black. */
+  borderColor?: string;
+  /** Optional label text to display below the circle on a rectangle background. */
+  label?: string;
 }
 
 /**

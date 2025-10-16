@@ -452,39 +452,34 @@ public class MapViewController {
     int bgColor = backgroundColor != null ? Color.parseColor(backgroundColor) : Color.WHITE;
     
     float padding = (float) CollectionUtil.getDouble("padding", optionsMap, 8.0);
-    float cornerRadius = (float) CollectionUtil.getDouble("cornerRadius", optionsMap, 4.0);
-    boolean bold = CollectionUtil.getBool("bold", optionsMap, false);
-    boolean visible = CollectionUtil.getBool("visible", optionsMap, true);
-    boolean clickable = CollectionUtil.getBool("clickable", optionsMap, true);
-    float alpha = (float) CollectionUtil.getDouble("alpha", optionsMap, 1.0);
-    float rotation = (float) CollectionUtil.getDouble("rotation", optionsMap, 0.0);
-    boolean draggable = CollectionUtil.getBool("draggable", optionsMap, false);
-    boolean flat = CollectionUtil.getBool("flat", optionsMap, false);
 
-    // Generate bitmap with text and background
-    BitmapDescriptor bitmapDescriptor = createTextBitmap(text, textColor, bgColor, fontSize, padding, cornerRadius, bold);
+    // Border styling parameters
+    String borderColorStr = CollectionUtil.getString("borderColor", optionsMap);
+    int borderColor = borderColorStr != null ? Color.parseColor(borderColorStr) : Color.BLACK;
+
+    // Label text (optional)
+    String label = CollectionUtil.getString("label", optionsMap);
+
+    // Generate bitmap with text and circle background
+    BitmapDescriptor bitmapDescriptor = createTextBitmap(text, textColor, bgColor, fontSize, padding, borderColor, label);
     if (bitmapDescriptor == null) {
       return null;
     }
+
+    // Calculate anchor point to position circle center at the specified coordinates
+    float anchorU = 0.5f; // Center horizontally
+    float anchorV = calculateAnchorV(text, fontSize, padding, label);
 
     // Create marker options with custom text bitmap
     MarkerOptions options = new MarkerOptions();
     options.icon(bitmapDescriptor);
     options.position(position);
-    options.visible(visible);
-    options.alpha(alpha);
-    options.rotation(rotation);
-    options.draggable(draggable);
-    options.flat(flat);
+    options.anchor(anchorU, anchorV);
 
-    // Add optional title and snippet if provided
+    // Add optional title if provided
     String title = CollectionUtil.getString("title", optionsMap);
-    String snippet = CollectionUtil.getString("snippet", optionsMap);
     if (title != null) {
       options.title(title);
-    }
-    if (snippet != null) {
-      options.snippet(snippet);
     }
 
     Marker textMarker = mGoogleMap.addMarker(options);
@@ -721,61 +716,159 @@ public class MapViewController {
 
 
   /**
-   * Creates a bitmap with text on a background rectangle.
+   * Calculates the vertical anchor point to position the circle center at the marker position.
    * 
-   * @param text         The text to render
+   * @param text     The text to render in the circle
+   * @param fontSize The font size in pixels
+   * @param padding  The padding around the text
+   * @param label    Optional label text (can be null)
+   * @return The vertical anchor value (0-1) where 0 is top and 1 is bottom of the bitmap
+   */
+  private float calculateAnchorV(String text, float fontSize, float padding, String label) {
+    try {
+      // Create paint to measure text
+      Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      textPaint.setTextSize(fontSize);
+      textPaint.setTypeface(Typeface.DEFAULT_BOLD);
+      
+      // Measure text dimensions
+      Rect textBounds = new Rect();
+      textPaint.getTextBounds(text, 0, text.length(), textBounds);
+      int textWidth = textBounds.width();
+      int textHeight = textBounds.height();
+      
+      // Calculate circle dimensions
+      int circleDiameter = (int) ((textWidth > textHeight ? textWidth : textHeight) + (padding * 2));
+      float borderWidth = circleDiameter * 0.08f;
+      
+      // Calculate label height if label exists
+      int labelRectHeight = 0;
+      if (label != null && !label.isEmpty()) {
+        Paint labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        labelPaint.setTextSize(fontSize * 0.6f);
+        Rect labelBounds = new Rect();
+        labelPaint.getTextBounds(label, 0, label.length(), labelBounds);
+        labelRectHeight = (int) (labelBounds.height() + (padding * 0.8f));
+      }
+      
+      // Calculate total bitmap height and circle center position
+      float bitmapHeight = circleDiameter + (borderWidth * 2) + labelRectHeight;
+      float circleCenterY = (circleDiameter + (borderWidth * 2)) / 2f;
+      
+      // Return anchor V (fraction of bitmap height where circle center is)
+      return circleCenterY / bitmapHeight;
+    } catch (Exception e) {
+      // Default to center if calculation fails
+      return 0.5f;
+    }
+  }
+
+  /**
+   * Creates a bitmap with text on a background circle with border.
+   * Optionally draws a label text on a rectangle below the circle.
+   * The border width is automatically calculated as 8% of the circle diameter.
+   * 
+   * @param text         The text to render in the circle
    * @param textColor    The color of the text
-   * @param bgColor      The background color
+   * @param bgColor      The background circle color
    * @param fontSize     The font size in pixels
    * @param padding      The padding around the text
-   * @param cornerRadius The corner radius for rounded corners
-   * @param bold         Whether to use bold font
-   * @return BitmapDescriptor containing the rendered text with background
+   * @param borderColor  The border circle color
+   * @param label        Optional label text to display below the circle (can be null)
+   * @return BitmapDescriptor containing the rendered text with circle background
    */
   private BitmapDescriptor createTextBitmap(String text, int textColor, int bgColor, 
-                                            float fontSize, float padding, float cornerRadius, boolean bold) {
+                                            float fontSize, float padding, int borderColor, String label) {
     try {
       // Create paint for text
       Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
       textPaint.setColor(textColor);
       textPaint.setTextSize(fontSize);
-      if (bold) {
-        textPaint.setTypeface(Typeface.DEFAULT_BOLD);
-      } else {
-        textPaint.setTypeface(Typeface.DEFAULT);
-      }
+      textPaint.setTypeface(Typeface.DEFAULT_BOLD);
 
       // Create paint for background
       Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
       bgPaint.setColor(bgColor);
 
-      // Measure text dimensions
+      // Measure main text dimensions
       Rect textBounds = new Rect();
       textPaint.getTextBounds(text, 0, text.length(), textBounds);
       
       int textWidth = textBounds.width();
       int textHeight = textBounds.height();
       
-      // Calculate bitmap dimensions with padding
-      int bitmapWidth = (int) (textWidth + (padding * 2));
-      int bitmapHeight = (int) (textHeight + (padding * 2));
+      // Calculate circle dimensions
+      int circleDiameter = (int) ((textWidth > textHeight ? textWidth : textHeight) + (padding * 2));
+      float borderWidth = circleDiameter * 0.08f;
+      
+      // Calculate label dimensions if label exists
+      boolean hasLabel = label != null && !label.isEmpty();
+      int labelRectHeight = 0;
+      int labelRectWidth = 0;
+      Rect labelBounds = new Rect();
+      Paint labelPaint = null;
+      
+      if (hasLabel) {
+        // Create paint for label text (smaller font size)
+        labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        labelPaint.setColor(textColor);
+        labelPaint.setTextSize(fontSize * 0.6f); // 60% of main text size
+        labelPaint.setTypeface(Typeface.DEFAULT);
+        labelPaint.getTextBounds(label, 0, label.length(), labelBounds);
+        
+        labelRectHeight = (int) (labelBounds.height() + (padding * 0.8f)); // Smaller padding for label
+        labelRectWidth = (int) Math.max(circleDiameter + (borderWidth * 2), labelBounds.width() + padding);
+      }
+      
+      // Calculate total bitmap dimensions
+      int bitmapWidth = hasLabel ? labelRectWidth : (int) (circleDiameter + (borderWidth * 2));
+      int bitmapHeight = (int) (circleDiameter + (borderWidth * 2) + labelRectHeight);
       
       // Create bitmap and canvas
       Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
       Canvas canvas = new Canvas(bitmap);
       
-      // Draw background rectangle with rounded corners
-      if (cornerRadius > 0) {
-        canvas.drawRoundRect(0, 0, bitmapWidth, bitmapHeight, cornerRadius, cornerRadius, bgPaint);
-      } else {
-        canvas.drawRect(0, 0, bitmapWidth, bitmapHeight, bgPaint);
+      // Calculate circle center (at top of bitmap)
+      float centerX = bitmapWidth / 2f;
+      float centerY = (circleDiameter + (borderWidth * 2)) / 2f;
+      float radius = (circleDiameter - borderWidth) / 2f;
+      
+      // Draw background circle
+      canvas.drawCircle(centerX, centerY, radius, bgPaint);
+      
+      // Draw border circle
+      if (borderWidth > 0) {
+        Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        borderPaint.setColor(borderColor);
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setStrokeWidth(borderWidth);
+        canvas.drawCircle(centerX, centerY, radius, borderPaint);
       }
       
-      // Draw text centered on the background
-      float textX = padding;
-      float textY = padding + textHeight; // textHeight to account for baseline
-      
+      // Draw text centered on the circle
+      float textX = centerX - (textBounds.width() / 2f);
+      float textY = centerY + (textBounds.height() / 2f);
       canvas.drawText(text, textX, textY, textPaint);
+      
+      // Draw label rectangle and text if label exists
+      if (hasLabel) {
+        float rectTop = circleDiameter + (borderWidth * 2);
+        float rectLeft = (bitmapWidth - labelRectWidth) / 2f;
+        float rectRight = rectLeft + labelRectWidth;
+        float rectBottom = rectTop + labelRectHeight;
+        float cornerRadius = padding * 0.5f;
+        
+        // Draw rounded rectangle for label
+        Paint rectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        rectPaint.setColor(bgColor);
+        canvas.drawRoundRect(rectLeft, rectTop, rectRight, rectBottom, cornerRadius, cornerRadius, rectPaint);
+        
+        // Draw label text centered on rectangle
+        float labelX = centerX - (labelBounds.width() / 2f);
+        float labelY = rectTop + (labelRectHeight / 2f) - labelBounds.exactCenterY();
+        canvas.drawText(label, labelX, labelY, labelPaint);
+      }
+      
       
       return BitmapDescriptorFactory.fromBitmap(bitmap);
     } catch (Exception e) {
