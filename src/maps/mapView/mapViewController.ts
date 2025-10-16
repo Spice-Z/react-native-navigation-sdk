@@ -15,7 +15,7 @@
  */
 
 import { NativeModules } from 'react-native';
-import type { Location } from '../../shared/types';
+import type { LatLng, Location } from '../../shared/types';
 import { commands, sendCommand } from '../../shared/viewManager';
 import type {
   CameraPosition,
@@ -33,6 +33,7 @@ import type {
   Padding,
   PolygonOptions,
   PolylineOptions,
+  TextMarkerOptions,
 } from './types';
 const { NavViewModule } = NativeModules;
 
@@ -80,6 +81,14 @@ export const getMapViewController = (viewId: number): MapViewController => {
       sendCommand(viewId, commands.removeMarker, [id]);
     },
 
+    moveMarker: async (
+      id: string,
+      position: LatLng,
+      duration: number = 1000
+    ): Promise<boolean> => {
+      return await NavViewModule.moveMarker(viewId, id, position, duration);
+    },
+
     removePolyline: (id: string) => {
       sendCommand(viewId, commands.removePolyline, [id]);
     },
@@ -90,6 +99,12 @@ export const getMapViewController = (viewId: number): MapViewController => {
 
     removeCircle: (id: string) => {
       sendCommand(viewId, commands.removeCircle, [id]);
+    },
+
+    addTextMarker: async (
+      textMarkerOptions: TextMarkerOptions
+    ): Promise<Marker> => {
+      return await NavViewModule.addTextMarker(viewId, textMarkerOptions);
     },
 
     setIndoorEnabled: (isOn: boolean) => {
