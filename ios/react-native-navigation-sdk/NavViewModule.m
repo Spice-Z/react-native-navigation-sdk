@@ -142,6 +142,48 @@ RCT_EXPORT_METHOD(addMarker
   });
 }
 
+RCT_EXPORT_METHOD(addTextMarker
+                  : (nonnull NSNumber *)reactTag textMarkerOptions
+                  : (NSDictionary *)textMarkerOptions resolver
+                  : (RCTPromiseResolveBlock)resolve rejecter
+                  : (RCTPromiseRejectBlock)reject) {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    NavViewController *viewController = [self getViewControllerForTag:reactTag];
+    if (viewController) {
+      [viewController addTextMarker:textMarkerOptions
+                             result:^(NSDictionary *result) {
+                               if (result) {
+                                 resolve(result);
+                               } else {
+                                 reject(@"text_marker_error", @"Failed to create text marker", nil);
+                               }
+                             }];
+    } else {
+      reject(@"no_view_controller", @"No viewController found", nil);
+    }
+  });
+}
+
+RCT_EXPORT_METHOD(moveMarker
+                  : (nonnull NSNumber *)reactTag markerId
+                  : (NSString *)markerId newPosition
+                  : (NSDictionary *)newPosition duration
+                  : (nonnull NSNumber *)duration resolver
+                  : (RCTPromiseResolveBlock)resolve rejecter
+                  : (RCTPromiseRejectBlock)reject) {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    NavViewController *viewController = [self getViewControllerForTag:reactTag];
+    if (viewController) {
+      [viewController moveMarker:markerId
+                     newPosition:newPosition
+                        duration:[duration integerValue]];
+      resolve(@(YES));
+    } else {
+      reject(@"no_view_controller", @"No viewController found", nil);
+    }
+  });
+}
+
 RCT_EXPORT_METHOD(addPolyline
                   : (nonnull NSNumber *)reactTag polylineOptions
                   : (NSDictionary *)polylineOptions resolver

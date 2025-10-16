@@ -171,6 +171,25 @@ public class NavViewModule extends ReactContextBaseJavaModule {
         });
   }
 
+
+
+  @ReactMethod
+  public void moveMarker(int viewId, String markerId, ReadableMap newPosition, int duration,
+      final Promise promise) {
+    UiThreadUtil.runOnUiThread(
+        () -> {
+          if (mNavViewManager.getGoogleMap(viewId) != null) {
+            mNavViewManager
+                .getFragmentForViewId(viewId)
+                .getMapController()
+                .moveMarker(markerId, newPosition.toHashMap(), duration);
+            promise.resolve(true);
+          } else {
+            promise.reject("NO_MAP", "Map not found for viewId: " + viewId);
+          }
+        });
+  }
+
   @ReactMethod
   public void addPolyline(int viewId, ReadableMap polylineOptionsMap, final Promise promise) {
     UiThreadUtil.runOnUiThread(
@@ -230,6 +249,28 @@ public class NavViewModule extends ReactContextBaseJavaModule {
           GroundOverlay overlay =
               fragment.getMapController().addGroundOverlay(overlayOptionsMap.toHashMap());
           promise.resolve(ObjectTranslationUtil.getMapFromGroundOverlay(overlay));
+        });
+  }
+
+  @ReactMethod
+  public void addTextMarker(int viewId, ReadableMap textMarkerOptionsMap, final Promise promise) {
+    UiThreadUtil.runOnUiThread(
+        () -> {
+          if (mNavViewManager.getGoogleMap(viewId) == null) {
+            promise.reject(JsErrors.NO_MAP_ERROR_CODE, JsErrors.NO_MAP_ERROR_MESSAGE);
+            return;
+          }
+          Marker textMarker =
+              mNavViewManager
+                  .getFragmentForViewId(viewId)
+                  .getMapController()
+                  .addTextMarker(textMarkerOptionsMap.toHashMap());
+
+          if (textMarker != null) {
+            promise.resolve(ObjectTranslationUtil.getMapFromMarker(textMarker));
+          } else {
+            promise.reject("TEXT_MARKER_ERROR", "Failed to create text marker");
+          }
         });
   }
 
