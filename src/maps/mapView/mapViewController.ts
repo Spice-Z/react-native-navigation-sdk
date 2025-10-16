@@ -81,10 +81,6 @@ export const getMapViewController = (viewId: number): MapViewController => {
       sendCommand(viewId, commands.removeMarker, [id]);
     },
 
-    moveMarker: async (id: string, position: LatLng): Promise<boolean> => {
-      return await NavViewModule.moveMarker(viewId, id, position);
-    },
-
     animateMarkerToPosition: async (
       id: string,
       position: LatLng,

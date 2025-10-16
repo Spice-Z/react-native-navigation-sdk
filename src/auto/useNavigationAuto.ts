@@ -193,10 +193,6 @@ export const useNavigationAuto = (): {
         return NavAutoModule.setPadding(top, left, bottom, right);
       },
 
-      moveMarker: (markerId: string, position: LatLng) => {
-        return NavAutoModule.moveMarker(markerId, position);
-      },
-
       animateMarkerToPosition: (
         markerId: string,
         position: LatLng,

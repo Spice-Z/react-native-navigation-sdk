@@ -369,37 +369,6 @@ public class MapViewController {
     });
   }
 
-  /**
-   * Immediately moves a marker to a new position without animation.
-   * 
-   * @param markerId    The ID of the marker to move
-   * @param newPosition The new position to move the marker to
-   */
-  public void moveMarker(String markerId, Map<String, Object> newPosition) {
-    if (mGoogleMap == null) {
-      return;
-    }
-
-    UiThreadUtil.runOnUiThread(() -> {
-      // Find the marker
-      Marker markerToMove = null;
-      for (Marker marker : markerList) {
-        if (marker.getId().equals(markerId)) {
-          markerToMove = marker;
-          break;
-        }
-      }
-
-      if (markerToMove == null) {
-        return; // Marker not found
-      }
-
-      LatLng newLatLng = ObjectTranslationUtil.getLatLngFromMap(newPosition);
-
-      // Update marker position
-      markerToMove.setPosition(newLatLng);
-    });
-  }
 
   public void removeMarker(String id) {
     UiThreadUtil.runOnUiThread(

@@ -313,17 +313,7 @@ export interface MapViewController {
   removeMarker(id: string): void;
 
   /**
-   * Moves a marker to a new position immediately without animation.
-   * Also moves the associated pulse circle if it exists.
-   *
-   * @param id - String specifying the id property of the marker
-   * @param position - The new position for the marker
-   */
-  moveMarker(id: string, position: LatLng): Promise<boolean>;
-
-  /**
    * Animates a marker to a new position with smooth movement.
-   * Also moves the associated pulse circle if it exists.
    *
    * @param id - String specifying the id property of the marker
    * @param position - The new position for the marker
