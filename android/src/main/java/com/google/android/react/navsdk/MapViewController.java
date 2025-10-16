@@ -318,7 +318,7 @@ public class MapViewController {
    * @param newPosition The new position to move the marker to
    * @param duration    The duration of the animation in milliseconds
    */
-  public void animateMarkerToPosition(String markerId, Map<String, Object> newPosition, int duration) {
+  public void moveMarker(String markerId, Map<String, Object> newPosition, int duration) {
     if (mGoogleMap == null) {
       return;
     }

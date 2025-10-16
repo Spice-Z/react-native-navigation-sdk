@@ -164,7 +164,7 @@ RCT_EXPORT_METHOD(addTextMarker
   });
 }
 
-RCT_EXPORT_METHOD(animateMarkerToPosition
+RCT_EXPORT_METHOD(moveMarker
                   : (nonnull NSNumber *)reactTag markerId
                   : (NSString *)markerId newPosition
                   : (NSDictionary *)newPosition duration
@@ -174,9 +174,9 @@ RCT_EXPORT_METHOD(animateMarkerToPosition
   dispatch_async(dispatch_get_main_queue(), ^{
     NavViewController *viewController = [self getViewControllerForTag:reactTag];
     if (viewController) {
-      [viewController animateMarkerToPosition:markerId
-                                  newPosition:newPosition
-                                     duration:[duration integerValue]];
+      [viewController moveMarker:markerId
+                     newPosition:newPosition
+                        duration:[duration integerValue]];
       resolve(@(YES));
     } else {
       reject(@"no_view_controller", @"No viewController found", nil);

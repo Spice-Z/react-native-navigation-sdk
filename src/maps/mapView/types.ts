@@ -116,18 +116,18 @@ export interface TextMarkerOptions {
   text: string;
   /** The position on the map where the text marker will be placed. */
   position: LatLng;
-  /** The font size of the text in pixels. Defaults to 14. */
-  fontSize?: number;
-  /** The color of the text in hex format (e.g., '#000000'). Defaults to black. */
-  fontColor?: string;
-  /** The background color of the rectangle in hex format (e.g., '#FFFFFF'). Defaults to white. */
-  backgroundColor?: string;
-  /** The padding around the text in pixels. Defaults to 8. */
-  padding?: number;
+  /** The font size of the text in pixels. */
+  fontSize: number;
+  /** The color of the text in hex format (e.g., '#000000'). */
+  fontColor: string;
+  /** The background color of the circle in hex format (e.g., '#FFFFFF'). */
+  backgroundColor: string;
+  /** The padding around the text in pixels. */
+  padding: number;
+  /** The border color of the circle in hex format (e.g., '#000000'). */
+  borderColor: string;
   /** A text string that's displayed in an info window when the user taps the marker. */
   title?: string;
-  /** The border color of the circle in hex format (e.g., '#000000'). Defaults to black. */
-  borderColor?: string;
   /** Optional label text to display below the circle on a rectangle background. */
   label?: string;
 }
@@ -289,17 +289,13 @@ export interface MapViewController {
   removeMarker(id: string): void;
 
   /**
-   * Animates a marker to a new position with smooth movement.
+   * Moves a marker to a new position with smooth movement.
    *
    * @param id - String specifying the id property of the marker
    * @param position - The new position for the marker
    * @param duration - Duration of the animation in milliseconds (default: 1000)
    */
-  animateMarkerToPosition(
-    id: string,
-    position: LatLng,
-    duration?: number
-  ): Promise<boolean>;
+  moveMarker(id: string, position: LatLng, duration?: number): Promise<boolean>;
 
   /**
    * Removes a polyline from the map.

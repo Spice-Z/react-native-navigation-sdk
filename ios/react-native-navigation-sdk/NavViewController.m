@@ -745,9 +745,9 @@
   completionBlock([ObjectTranslationUtil transformMarkerToDictionary:marker]);
 }
 
-- (void)animateMarkerToPosition:(NSString *)markerId 
-                     newPosition:(NSDictionary *)newPosition 
-                        duration:(NSInteger)duration {
+- (void)moveMarker:(NSString *)markerId 
+        newPosition:(NSDictionary *)newPosition 
+           duration:(NSInteger)duration {
   if (!_mapView) {
     return;
   }

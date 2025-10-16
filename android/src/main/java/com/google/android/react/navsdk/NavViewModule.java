@@ -174,7 +174,7 @@ public class NavViewModule extends ReactContextBaseJavaModule {
 
 
   @ReactMethod
-  public void animateMarkerToPosition(int viewId, String markerId, ReadableMap newPosition, int duration,
+  public void moveMarker(int viewId, String markerId, ReadableMap newPosition, int duration,
       final Promise promise) {
     UiThreadUtil.runOnUiThread(
         () -> {
@@ -182,7 +182,7 @@ public class NavViewModule extends ReactContextBaseJavaModule {
             mNavViewManager
                 .getFragmentForViewId(viewId)
                 .getMapController()
-                .animateMarkerToPosition(markerId, newPosition.toHashMap(), duration);
+                .moveMarker(markerId, newPosition.toHashMap(), duration);
             promise.resolve(true);
           } else {
             promise.reject("NO_MAP", "Map not found for viewId: " + viewId);

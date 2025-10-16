@@ -72,7 +72,7 @@ typedef void (^OnArrayResult)(NSArray *_Nullable result);
 - (void)addCircle:(NSDictionary *)circleOptions result:(OnDictionaryResult)completionBlock;
 - (void)addMarker:(NSDictionary *)markerOptions result:(OnDictionaryResult)completionBlock;
 - (void)addTextMarker:(NSDictionary *)textMarkerOptions result:(OnDictionaryResult)completionBlock;
-- (void)animateMarkerToPosition:(NSString *)markerId newPosition:(NSDictionary *)newPosition duration:(NSInteger)duration;
+- (void)moveMarker:(NSString *)markerId newPosition:(NSDictionary *)newPosition duration:(NSInteger)duration;
 - (void)addPolygon:(NSDictionary *)polygonOptions result:(OnDictionaryResult)completionBlock;
 - (void)addPolyline:(NSDictionary *)options result:(OnDictionaryResult)completionBlock;
 - (GMSMapView *)mapView;

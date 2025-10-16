@@ -193,16 +193,8 @@ export const useNavigationAuto = (): {
         return NavAutoModule.setPadding(top, left, bottom, right);
       },
 
-      animateMarkerToPosition: (
-        markerId: string,
-        position: LatLng,
-        duration: number
-      ) => {
-        return NavAutoModule.animateMarkerToPosition(
-          markerId,
-          position,
-          duration
-        );
+      moveMarker: (markerId: string, position: LatLng, duration: number) => {
+        return NavAutoModule.moveMarker(markerId, position, duration);
       },
 
       addTextMarker: async (

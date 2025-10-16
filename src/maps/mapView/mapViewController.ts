@@ -81,17 +81,12 @@ export const getMapViewController = (viewId: number): MapViewController => {
       sendCommand(viewId, commands.removeMarker, [id]);
     },
 
-    animateMarkerToPosition: async (
+    moveMarker: async (
       id: string,
       position: LatLng,
       duration: number = 1000
     ): Promise<boolean> => {
-      return await NavViewModule.animateMarkerToPosition(
-        viewId,
-        id,
-        position,
-        duration
-      );
+      return await NavViewModule.moveMarker(viewId, id, position, duration);
     },
 
     removePolyline: (id: string) => {
