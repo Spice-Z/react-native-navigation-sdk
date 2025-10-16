@@ -79,8 +79,6 @@ export interface MarkerOptions {
   flat?: boolean;
   /** Indicates the visibility of the polygon. True by default. */
   visible?: boolean;
-  /** When true, creates a pulsing circle animation underneath the marker when it's added to the map. The circle expands and fades out repeatedly, creating a ripple effect. The circle color matches the marker color. The animation continues until the marker is removed. Defaults to true. Android only. */
-  animateOnAdd?: boolean;
 }
 
 /**
@@ -156,8 +154,6 @@ export interface TextMarkerOptions {
   title?: string;
   /** Additional text that's displayed below the title. */
   snippet?: string;
-  /** When true, creates a pulsing circle animation underneath the marker. Defaults to false. Android only. */
-  animateOnAdd?: boolean;
 }
 
 /**
