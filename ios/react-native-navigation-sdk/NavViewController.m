@@ -544,7 +544,10 @@
                                 label:(NSString *)label {
   // Set bold font
   UIFont *font = [UIFont boldSystemFontOfSize:fontSize];
-  NSDictionary *textAttributes = @{NSFontAttributeName: font};
+  NSDictionary *textAttributes = @{
+    NSFontAttributeName: font,
+    NSForegroundColorAttributeName: textColor
+  };
   
   // Measure text dimensions
   CGSize textSize = [text sizeWithAttributes:textAttributes];
@@ -562,7 +565,10 @@
   
   if (label && label.length > 0) {
     labelFont = [UIFont systemFontOfSize:fontSize * 0.6];
-    NSDictionary *labelAttributes = @{NSFontAttributeName: labelFont};
+    NSDictionary *labelAttributes = @{
+      NSFontAttributeName: labelFont,
+      NSForegroundColorAttributeName: textColor
+    };
     labelSize = [label sizeWithAttributes:labelAttributes];
     labelRectHeight = labelSize.height + (padding * 0.8);
     labelRectWidth = MAX(circleDiameter + (borderWidth * 2), labelSize.width + padding);
@@ -593,7 +599,6 @@
   }
   
   // Draw text centered on the circle
-  [textColor set];
   CGFloat textX = centerX - (textSize.width / 2.0);
   CGFloat textY = centerY - (textSize.height / 2.0);
   [text drawAtPoint:CGPointMake(textX, textY) withAttributes:textAttributes];
@@ -611,8 +616,10 @@
     [path fill];
     
     // Draw label text centered on rectangle
-    [textColor set];
-    NSDictionary *labelAttributes = @{NSFontAttributeName: labelFont};
+    NSDictionary *labelAttributes = @{
+      NSFontAttributeName: labelFont,
+      NSForegroundColorAttributeName: textColor
+    };
     CGFloat labelX = centerX - (labelSize.width / 2.0);
     CGFloat labelY = rectTop + (labelRectHeight - labelSize.height) / 2.0;
     [label drawAtPoint:CGPointMake(labelX, labelY) withAttributes:labelAttributes];
