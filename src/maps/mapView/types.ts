@@ -53,18 +53,6 @@ export interface MarkerOptions {
   position: LatLng;
   /** Path to a local image asset that should be displayed in the marker instead of using the default marker pin. */
   imgPath?: string;
-  /** Color of the default marker pin. Available values: 'azure', 'blue', 'cyan', 'green', 'magenta', 'orange', 'red', 'rose', 'violet', 'yellow'. Defaults to 'red'. Note: This is ignored if imgPath is provided. */
-  color?:
-    | 'azure'
-    | 'blue'
-    | 'cyan'
-    | 'green'
-    | 'magenta'
-    | 'orange'
-    | 'red'
-    | 'rose'
-    | 'violet'
-    | 'yellow';
   /** A text string that's displayed in an info window when the user taps the marker. You can change this value at any time. */
   title?: string;
   /** Additional text that's displayed below the title. You can change this value at any time. */

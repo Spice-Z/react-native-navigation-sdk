@@ -141,7 +141,6 @@ public class MapViewController {
     String imagePath = CollectionUtil.getString("imgPath", optionsMap);
     String title = CollectionUtil.getString("title", optionsMap);
     String snippet = CollectionUtil.getString("snippet", optionsMap);
-    String color = CollectionUtil.getString("color", optionsMap);
     float alpha = Double.valueOf(CollectionUtil.getDouble("alpha", optionsMap, 1)).floatValue();
     float rotation =
         Double.valueOf(CollectionUtil.getDouble("rotation", optionsMap, 0)).floatValue();
@@ -153,10 +152,6 @@ public class MapViewController {
     if (imagePath != null && !imagePath.isEmpty()) {
       BitmapDescriptor icon = BitmapDescriptorFactory.fromAsset(imagePath);
       options.icon(icon);
-    } else {
-      // Only apply color if no custom image is provided
-      float markerHue = getMarkerHueFromColor(color);
-      options.icon(BitmapDescriptorFactory.defaultMarker(markerHue));
     }
 
     options.position(
@@ -719,43 +714,6 @@ public class MapViewController {
     return new LatLng(lat, lng);
   }
 
-  /**
-   * Maps color string to BitmapDescriptorFactory HUE constant.
-   * 
-   * @param color Color name string (e.g., "red", "blue", "green")
-   * @return The corresponding HUE value, defaults to HUE_RED if color is null or
-   *         unrecognized
-   */
-  private float getMarkerHueFromColor(String color) {
-    if (color == null) {
-      return BitmapDescriptorFactory.HUE_RED; // Default color
-    }
-
-    switch (color.toLowerCase()) {
-      case "azure":
-        return BitmapDescriptorFactory.HUE_AZURE;
-      case "blue":
-        return BitmapDescriptorFactory.HUE_BLUE;
-      case "cyan":
-        return BitmapDescriptorFactory.HUE_CYAN;
-      case "green":
-        return BitmapDescriptorFactory.HUE_GREEN;
-      case "magenta":
-        return BitmapDescriptorFactory.HUE_MAGENTA;
-      case "orange":
-        return BitmapDescriptorFactory.HUE_ORANGE;
-      case "red":
-        return BitmapDescriptorFactory.HUE_RED;
-      case "rose":
-        return BitmapDescriptorFactory.HUE_ROSE;
-      case "violet":
-        return BitmapDescriptorFactory.HUE_VIOLET;
-      case "yellow":
-        return BitmapDescriptorFactory.HUE_YELLOW;
-      default:
-        return BitmapDescriptorFactory.HUE_RED; // Default to red for unrecognized colors
-    }
-  }
 
 
 
