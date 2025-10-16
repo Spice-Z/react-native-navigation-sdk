@@ -524,6 +524,321 @@
   completionBlock([ObjectTranslationUtil transformMarkerToDictionary:marker]);
 }
 
+/**
+ * Helper method to create a UIImage with text on a background circle with border.
+ * @param text The text to render in the circle
+ * @param textColor The color of the text
+ * @param bgColor The background circle color
+ * @param fontSize The font size in points
+ * @param padding The padding around the text
+ * @param borderColor The border circle color
+ * @param label Optional label text to display below the circle (can be nil)
+ * @return UIImage containing the rendered text with circle background
+ */
+- (UIImage *)createTextBitmapWithText:(NSString *)text
+                            textColor:(UIColor *)textColor
+                              bgColor:(UIColor *)bgColor
+                             fontSize:(CGFloat)fontSize
+                              padding:(CGFloat)padding
+                          borderColor:(UIColor *)borderColor
+                                label:(NSString *)label {
+  // Set bold font
+  UIFont *font = [UIFont boldSystemFontOfSize:fontSize];
+  NSDictionary *textAttributes = @{NSFontAttributeName: font};
+  
+  // Measure text dimensions
+  CGSize textSize = [text sizeWithAttributes:textAttributes];
+  
+  // Calculate circle dimensions
+  CGFloat maxDimension = MAX(textSize.width, textSize.height);
+  CGFloat circleDiameter = maxDimension + (padding * 2);
+  CGFloat borderWidth = circleDiameter * 0.08;
+  
+  // Calculate label dimensions if label exists
+  CGFloat labelRectHeight = 0;
+  CGFloat labelRectWidth = 0;
+  CGSize labelSize = CGSizeZero;
+  UIFont *labelFont = nil;
+  
+  if (label && label.length > 0) {
+    labelFont = [UIFont systemFontOfSize:fontSize * 0.6];
+    NSDictionary *labelAttributes = @{NSFontAttributeName: labelFont};
+    labelSize = [label sizeWithAttributes:labelAttributes];
+    labelRectHeight = labelSize.height + (padding * 0.8);
+    labelRectWidth = MAX(circleDiameter + (borderWidth * 2), labelSize.width + padding);
+  }
+  
+  // Calculate total bitmap dimensions
+  CGFloat bitmapWidth = (label && label.length > 0) ? labelRectWidth : (circleDiameter + (borderWidth * 2));
+  CGFloat bitmapHeight = circleDiameter + (borderWidth * 2) + labelRectHeight;
+  
+  // Create bitmap context
+  UIGraphicsBeginImageContextWithOptions(CGSizeMake(bitmapWidth, bitmapHeight), NO, 0.0);
+  CGContextRef context = UIGraphicsGetCurrentContext();
+  
+  // Calculate circle center
+  CGFloat centerX = bitmapWidth / 2.0;
+  CGFloat centerY = (circleDiameter + (borderWidth * 2)) / 2.0;
+  CGFloat radius = (circleDiameter - borderWidth) / 2.0;
+  
+  // Draw background circle
+  CGContextSetFillColorWithColor(context, bgColor.CGColor);
+  CGContextFillEllipseInRect(context, CGRectMake(centerX - radius, centerY - radius, radius * 2, radius * 2));
+  
+  // Draw border circle
+  if (borderWidth > 0) {
+    CGContextSetStrokeColorWithColor(context, borderColor.CGColor);
+    CGContextSetLineWidth(context, borderWidth);
+    CGContextStrokeEllipseInRect(context, CGRectMake(centerX - radius, centerY - radius, radius * 2, radius * 2));
+  }
+  
+  // Draw text centered on the circle
+  [textColor set];
+  CGFloat textX = centerX - (textSize.width / 2.0);
+  CGFloat textY = centerY - (textSize.height / 2.0);
+  [text drawAtPoint:CGPointMake(textX, textY) withAttributes:textAttributes];
+  
+  // Draw label rectangle and text if label exists
+  if (label && label.length > 0) {
+    CGFloat rectTop = circleDiameter + (borderWidth * 2);
+    CGFloat rectLeft = (bitmapWidth - labelRectWidth) / 2.0;
+    CGFloat cornerRadius = padding * 0.5;
+    
+    // Draw rounded rectangle for label
+    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(rectLeft, rectTop, labelRectWidth, labelRectHeight)
+                                                     cornerRadius:cornerRadius];
+    CGContextSetFillColorWithColor(context, bgColor.CGColor);
+    [path fill];
+    
+    // Draw label text centered on rectangle
+    [textColor set];
+    NSDictionary *labelAttributes = @{NSFontAttributeName: labelFont};
+    CGFloat labelX = centerX - (labelSize.width / 2.0);
+    CGFloat labelY = rectTop + (labelRectHeight - labelSize.height) / 2.0;
+    [label drawAtPoint:CGPointMake(labelX, labelY) withAttributes:labelAttributes];
+  }
+  
+  // Get the image from the context
+  UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+  UIGraphicsEndImageContext();
+  
+  return image;
+}
+
+/**
+ * Helper method to calculate the vertical anchor point to position the circle center at the marker position.
+ * @param text The text to render in the circle
+ * @param fontSize The font size in points
+ * @param padding The padding around the text
+ * @param label Optional label text (can be nil)
+ * @return The vertical anchor value (0-1) where 0 is top and 1 is bottom of the bitmap
+ */
+- (CGFloat)calculateAnchorVWithText:(NSString *)text
+                           fontSize:(CGFloat)fontSize
+                            padding:(CGFloat)padding
+                              label:(NSString *)label {
+  // Set bold font
+  UIFont *font = [UIFont boldSystemFontOfSize:fontSize];
+  NSDictionary *textAttributes = @{NSFontAttributeName: font};
+  
+  // Measure text dimensions
+  CGSize textSize = [text sizeWithAttributes:textAttributes];
+  
+  // Calculate circle dimensions
+  CGFloat maxDimension = MAX(textSize.width, textSize.height);
+  CGFloat circleDiameter = maxDimension + (padding * 2);
+  CGFloat borderWidth = circleDiameter * 0.08;
+  
+  // Calculate label height if label exists
+  CGFloat labelRectHeight = 0;
+  if (label && label.length > 0) {
+    UIFont *labelFont = [UIFont systemFontOfSize:fontSize * 0.6];
+    NSDictionary *labelAttributes = @{NSFontAttributeName: labelFont};
+    CGSize labelSize = [label sizeWithAttributes:labelAttributes];
+    labelRectHeight = labelSize.height + (padding * 0.8);
+  }
+  
+  // Calculate total bitmap height and circle center position
+  CGFloat bitmapHeight = circleDiameter + (borderWidth * 2) + labelRectHeight;
+  CGFloat circleCenterY = (circleDiameter + (borderWidth * 2)) / 2.0;
+  
+  // Return anchor V (fraction of bitmap height where circle center is)
+  return circleCenterY / bitmapHeight;
+}
+
+- (void)addTextMarker:(NSDictionary *)textMarkerOptions result:(OnDictionaryResult)completionBlock {
+  // Extract required parameters
+  NSString *text = [textMarkerOptions objectForKey:@"text"];
+  if (!text || text.length == 0) {
+    completionBlock(nil);
+    return;
+  }
+  
+  NSDictionary *position = [textMarkerOptions objectForKey:@"position"];
+  if (!position) {
+    completionBlock(nil);
+    return;
+  }
+  
+  CLLocationCoordinate2D coordinatePosition = [ObjectTranslationUtil getLocationCoordinateFrom:position];
+  
+  // Extract styling parameters with defaults
+  CGFloat fontSize = [[textMarkerOptions objectForKey:@"fontSize"] doubleValue];
+  if (fontSize == 0) fontSize = 14.0;
+  
+  NSString *fontColorStr = [textMarkerOptions objectForKey:@"fontColor"];
+  UIColor *textColor = fontColorStr ? [UIColor colorWithHexString:fontColorStr] : [UIColor blackColor];
+  
+  NSString *backgroundColorStr = [textMarkerOptions objectForKey:@"backgroundColor"];
+  UIColor *bgColor = backgroundColorStr ? [UIColor colorWithHexString:backgroundColorStr] : [UIColor whiteColor];
+  
+  CGFloat padding = [[textMarkerOptions objectForKey:@"padding"] doubleValue];
+  if (padding == 0) padding = 8.0;
+  
+  NSString *borderColorStr = [textMarkerOptions objectForKey:@"borderColor"];
+  UIColor *borderColor = borderColorStr ? [UIColor colorWithHexString:borderColorStr] : [UIColor blackColor];
+  
+  NSString *label = [textMarkerOptions objectForKey:@"label"];
+  
+  // Generate bitmap with text and circle background
+  UIImage *icon = [self createTextBitmapWithText:text
+                                       textColor:textColor
+                                         bgColor:bgColor
+                                        fontSize:fontSize
+                                         padding:padding
+                                     borderColor:borderColor
+                                           label:label];
+  
+  if (!icon) {
+    completionBlock(nil);
+    return;
+  }
+  
+  // Calculate anchor point to position circle center at the specified coordinates
+  CGFloat anchorU = 0.5;
+  CGFloat anchorV = [self calculateAnchorVWithText:text fontSize:fontSize padding:padding label:label];
+  
+  // Create marker with custom icon
+  GMSMarker *marker = [GMSMarker markerWithPosition:coordinatePosition];
+  marker.icon = icon;
+  marker.groundAnchor = CGPointMake(anchorU, anchorV);
+  
+  // Add optional title if provided
+  NSString *title = [textMarkerOptions objectForKey:@"title"];
+  if (title) {
+    marker.title = title;
+  }
+  
+  marker.tappable = YES;
+  marker.userData = @[ [[NSUUID UUID] UUIDString] ];
+  marker.map = _mapView;
+  
+  [_markerList addObject:marker];
+  
+  completionBlock([ObjectTranslationUtil transformMarkerToDictionary:marker]);
+}
+
+- (void)animateMarkerToPosition:(NSString *)markerId 
+                     newPosition:(NSDictionary *)newPosition 
+                        duration:(NSInteger)duration {
+  if (!_mapView) {
+    return;
+  }
+  
+  dispatch_async(dispatch_get_main_queue(), ^{
+    // Find the marker
+    GMSMarker *markerToMove = nil;
+    for (GMSMarker *marker in self->_markerList) {
+      NSArray *userData = marker.userData;
+      if (userData && userData.count > 0) {
+        NSString *markerIdFromData = userData[0];
+        if ([markerIdFromData isEqualToString:markerId]) {
+          markerToMove = marker;
+          break;
+        }
+      }
+    }
+    
+    if (!markerToMove) {
+      return; // Marker not found
+    }
+    
+    CLLocationCoordinate2D startPosition = markerToMove.position;
+    CLLocationCoordinate2D endPosition = [ObjectTranslationUtil getLocationCoordinateFrom:newPosition];
+    
+    // Use CADisplayLink for smooth animation
+    NSTimeInterval animationDuration = duration > 0 ? (duration / 1000.0) : 1.0;
+    NSDate *startTime = [NSDate date];
+    
+    // Create a display link for smooth animation
+    CADisplayLink *displayLink = [CADisplayLink displayLinkWithTarget:self 
+                                                             selector:@selector(updateMarkerPosition:)];
+    
+    // Store animation data in a dictionary
+    NSMutableDictionary *animationData = [NSMutableDictionary dictionary];
+    animationData[@"marker"] = markerToMove;
+    animationData[@"startLat"] = @(startPosition.latitude);
+    animationData[@"startLng"] = @(startPosition.longitude);
+    animationData[@"endLat"] = @(endPosition.latitude);
+    animationData[@"endLng"] = @(endPosition.longitude);
+    animationData[@"startTime"] = startTime;
+    animationData[@"duration"] = @(animationDuration);
+    animationData[@"displayLink"] = displayLink;
+    
+    // Store in marker's userData to access in update method
+    markerToMove.userData = @[markerId, animationData];
+    
+    [displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+  });
+}
+
+- (void)updateMarkerPosition:(CADisplayLink *)displayLink {
+  // Find markers that are being animated
+  for (GMSMarker *marker in _markerList) {
+    NSArray *userData = marker.userData;
+    if (userData && userData.count > 1 && [userData[1] isKindOfClass:[NSDictionary class]]) {
+      NSMutableDictionary *animationData = userData[1];
+      CADisplayLink *storedLink = animationData[@"displayLink"];
+      
+      if (storedLink == displayLink) {
+        NSDate *startTime = animationData[@"startTime"];
+        NSTimeInterval duration = [animationData[@"duration"] doubleValue];
+        NSTimeInterval elapsed = [[NSDate date] timeIntervalSinceDate:startTime];
+        
+        if (elapsed >= duration) {
+          // Animation complete
+          double endLat = [animationData[@"endLat"] doubleValue];
+          double endLng = [animationData[@"endLng"] doubleValue];
+          marker.position = CLLocationCoordinate2DMake(endLat, endLng);
+          
+          // Restore original userData
+          marker.userData = @[userData[0]];
+          
+          [displayLink invalidate];
+          return;
+        }
+        
+        // Calculate progress with easing
+        CGFloat progress = elapsed / duration;
+        // Apply ease-in-out interpolation
+        progress = progress < 0.5 ? 2 * progress * progress : 1 - pow(-2 * progress + 2, 2) / 2;
+        
+        // Calculate intermediate position
+        double startLat = [animationData[@"startLat"] doubleValue];
+        double startLng = [animationData[@"startLng"] doubleValue];
+        double endLat = [animationData[@"endLat"] doubleValue];
+        double endLng = [animationData[@"endLng"] doubleValue];
+        
+        double lat = startLat + (endLat - startLat) * progress;
+        double lng = startLng + (endLng - startLng) * progress;
+        
+        marker.position = CLLocationCoordinate2DMake(lat, lng);
+        return;
+      }
+    }
+  }
+}
+
 - (void)addPolygon:(NSDictionary *)polygonOptions result:(OnDictionaryResult)completionBlock {
   GMSPath *path = [ObjectTranslationUtil transformToPath:polygonOptions[@"points"]];
 
