@@ -130,6 +130,10 @@ export interface TextMarkerOptions {
   title?: string;
   /** Optional label text to display below the circle on a rectangle background. */
   label?: string;
+  /** The text color for the label in hex format (e.g., '#000000'). Defaults to textColor if not provided. */
+  labelTextColor?: string;
+  /** The background color for the label rectangle in hex format (e.g., '#FFFFFF'). Defaults to backgroundColor if not provided. */
+  labelBackgroundColor?: string;
 }
 
 /**

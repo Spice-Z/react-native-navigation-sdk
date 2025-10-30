@@ -541,7 +541,9 @@
                              fontSize:(CGFloat)fontSize
                               padding:(CGFloat)padding
                           borderColor:(UIColor *)borderColor
-                                label:(NSString *)label {
+                                label:(NSString *)label
+                       labelTextColor:(UIColor *)labelTextColor
+                 labelBackgroundColor:(UIColor *)labelBackgroundColor {
   // Set bold font
   UIFont *font = [UIFont boldSystemFontOfSize:fontSize];
   NSDictionary *textAttributes = @{
@@ -613,13 +615,13 @@
     // Draw rounded rectangle for label
     UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(rectLeft, rectTop, labelRectWidth, labelRectHeight)
                                                      cornerRadius:cornerRadius];
-    CGContextSetFillColorWithColor(context, bgColor.CGColor);
+    CGContextSetFillColorWithColor(context, labelBackgroundColor.CGColor);
     [path fill];
     
     // Draw label text centered on rectangle
     NSDictionary *labelAttributes = @{
       NSFontAttributeName: labelFont,
-      NSForegroundColorAttributeName: textColor
+      NSForegroundColorAttributeName: labelTextColor
     };
     CGFloat labelX = centerX - (labelSize.width / 2.0);
     CGFloat labelY = rectTop + (labelRectHeight - labelSize.height) / 2.0;
@@ -709,6 +711,13 @@
   
   NSString *label = [textMarkerOptions objectForKey:@"label"];
   
+  // Label styling parameters (defaults to main text/background colors if not provided)
+  NSString *labelTextColorStr = [textMarkerOptions objectForKey:@"labelTextColor"];
+  UIColor *labelTextColor = labelTextColorStr ? [UIColor colorWithHexString:labelTextColorStr] : textColor;
+  
+  NSString *labelBackgroundColorStr = [textMarkerOptions objectForKey:@"labelBackgroundColor"];
+  UIColor *labelBackgroundColor = labelBackgroundColorStr ? [UIColor colorWithHexString:labelBackgroundColorStr] : bgColor;
+  
   // Generate bitmap with text and circle background
   UIImage *icon = [self createTextBitmapWithText:text
                                        textColor:textColor
@@ -716,7 +725,9 @@
                                         fontSize:fontSize
                                          padding:padding
                                      borderColor:borderColor
-                                           label:label];
+                                           label:label
+                                  labelTextColor:labelTextColor
+                            labelBackgroundColor:labelBackgroundColor];
   
   if (!icon) {
     completionBlock(nil);

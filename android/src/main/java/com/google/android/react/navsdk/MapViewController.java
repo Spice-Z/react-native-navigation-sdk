@@ -470,8 +470,21 @@ public class MapViewController {
     // Label text (optional)
     String label = CollectionUtil.getString("label", optionsMap);
 
+    // Label styling parameters (defaults to main text/background colors if not provided)
+    String labelTextColorStr = CollectionUtil.getString("labelTextColor", optionsMap);
+    int labelTextColor = textColorInt; // Default to main text color
+    try {
+      if (labelTextColorStr != null) labelTextColor = Color.parseColor(labelTextColorStr);
+    } catch (IllegalArgumentException ignored) {}
+
+    String labelBackgroundColorStr = CollectionUtil.getString("labelBackgroundColor", optionsMap);
+    int labelBackgroundColor = bgColor; // Default to main background color
+    try {
+      if (labelBackgroundColorStr != null) labelBackgroundColor = Color.parseColor(labelBackgroundColorStr);
+    } catch (IllegalArgumentException ignored) {}
+
     // Generate bitmap with text and circle background
-    BitmapDescriptor bitmapDescriptor = createTextBitmap(text, textColorInt, bgColor, fontSize, padding, borderColor, label);
+    BitmapDescriptor bitmapDescriptor = createTextBitmap(text, textColorInt, bgColor, fontSize, padding, borderColor, label, labelTextColor, labelBackgroundColor);
     if (bitmapDescriptor == null) {
       return null;
     }
@@ -788,7 +801,8 @@ public class MapViewController {
    * @return BitmapDescriptor containing the rendered text with circle background
    */
   private BitmapDescriptor createTextBitmap(String text, int textColor, int bgColor, 
-                                            float fontSize, float padding, int borderColor, String label) {
+                                            float fontSize, float padding, int borderColor, String label,
+                                            int labelTextColor, int labelBackgroundColor) {
     try {
       // Create paint for text
       Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -821,7 +835,7 @@ public class MapViewController {
       if (hasLabel) {
         // Create paint for label text (smaller font size)
         labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        labelPaint.setColor(textColor);
+        labelPaint.setColor(labelTextColor);
         labelPaint.setTextSize(fontSize * 0.6f); // 60% of main text size
         labelPaint.setTypeface(Typeface.DEFAULT);
         labelPaint.getTextBounds(label, 0, label.length(), labelBounds);
@@ -870,7 +884,7 @@ public class MapViewController {
         
         // Draw rounded rectangle for label
         Paint rectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        rectPaint.setColor(bgColor);
+        rectPaint.setColor(labelBackgroundColor);
         canvas.drawRoundRect(rectLeft, rectTop, rectRight, rectBottom, cornerRadius, cornerRadius, rectPaint);
         
         // Draw label text centered on rectangle
