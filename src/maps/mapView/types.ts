@@ -116,13 +116,13 @@ export interface TextMarkerOptions {
   text: string;
   /** The position on the map where the text marker will be placed. */
   position: LatLng;
-  /** The font size of the text in pixels. */
+  /** The font size of the text. Uses density-independent pixels (dp) on Android and points (pt) on iOS. */
   fontSize: number;
   /** The color of the text in hex format (e.g., '#000000'). */
   textColor: string;
   /** The background color of the circle in hex format (e.g., '#FFFFFF'). */
   backgroundColor: string;
-  /** The padding around the text in pixels. */
+  /** The padding around the text. Uses density-independent pixels (dp) on Android and points (pt) on iOS. */
   padding: number;
   /** The border color of the circle in hex format (e.g., '#000000'). */
   borderColor: string;

@@ -445,7 +445,8 @@ public class MapViewController {
     }
 
     // Styling parameters with defaults
-    float fontSize = (float) CollectionUtil.getDouble("fontSize", optionsMap, 14.0);
+    float fontSizeDp = (float) CollectionUtil.getDouble("fontSize", optionsMap, 14.0);
+    float fontSize = dpToPx(fontSizeDp);
     String textColor = CollectionUtil.getString("textColor", optionsMap);
     int textColorInt = Color.BLACK;
     try {
@@ -458,7 +459,8 @@ public class MapViewController {
       if (backgroundColor != null) bgColor = Color.parseColor(backgroundColor);
     } catch (IllegalArgumentException ignored) {}
     
-    float padding = (float) CollectionUtil.getDouble("padding", optionsMap, 8.0);
+    float paddingDp = (float) CollectionUtil.getDouble("padding", optionsMap, 8.0);
+    float padding = dpToPx(paddingDp); // Convert dp to pixels for density-aware sizing
 
     // Border styling parameters
     String borderColorStr = CollectionUtil.getString("borderColor", optionsMap);
@@ -698,6 +700,16 @@ public class MapViewController {
     }
   }
 
+  private float dpToPx(float dp) {
+    Activity activity = activitySupplier.get();
+    if (activity != null) {
+      float density = activity.getResources().getDisplayMetrics().density;
+      return dp * density;
+    }
+    // Fallback to assuming mdpi (density = 1.0) if activity is not available
+    return dp;
+  }
+
   private String fetchJsonFromUrl(String urlString) throws IOException {
     URL url = new URL(urlString);
     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -774,9 +786,14 @@ public class MapViewController {
         labelRectHeight = (int) (labelBounds.height() + (padding * 0.8f));
       }
       
+      // Calculate shadow offset and blur
+      float shadowOffset = 8f;
+      float shadowBlur = 32f;
+      
       // Calculate total bitmap height and circle center position
       float bitmapHeight = circleDiameter + (borderWidth * 2) + labelRectHeight;
-      float circleCenterY = (circleDiameter + (borderWidth * 2)) / 2f;
+      bitmapHeight += shadowOffset + shadowBlur * 2;
+      float circleCenterY = (circleDiameter + (borderWidth * 2)) / 2f + shadowBlur;
       
       // Return anchor V (fraction of bitmap height where circle center is)
       return circleCenterY / bitmapHeight;
@@ -844,18 +861,41 @@ public class MapViewController {
         labelRectWidth = (int) Math.max(circleDiameter + (borderWidth * 2), labelBounds.width() + padding);
       }
       
-      // Calculate total bitmap dimensions
+      // Calculate shadow offset and blur (always enabled)
+      float shadowOffset = 8f; // 8dp offset for shadow
+      float shadowBlur = 32f;  // Large blur radius for soft shadow
+      
+      // Calculate total bitmap dimensions (add space for shadow)
       int bitmapWidth = hasLabel ? labelRectWidth : (int) (circleDiameter + (borderWidth * 2));
+      bitmapWidth += (int) (shadowBlur * 2); // Add space for shadow blur
       int bitmapHeight = (int) (circleDiameter + (borderWidth * 2) + labelRectHeight);
+      bitmapHeight += (int) (shadowOffset + shadowBlur * 2); // Add space for shadow
       
       // Create bitmap and canvas
       Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
       Canvas canvas = new Canvas(bitmap);
       
-      // Calculate circle center (at top of bitmap)
+      // Calculate circle center (offset for shadow space)
       float centerX = bitmapWidth / 2f;
-      float centerY = (circleDiameter + (borderWidth * 2)) / 2f;
+      float centerY = (circleDiameter + (borderWidth * 2)) / 2f + shadowBlur;
       float radius = (circleDiameter - borderWidth) / 2f;
+      
+      // Add multi-layered shadow effect - draw multiple times with different blur radii
+      // This approximates the CSS multi-shadow effect
+      int shadowColor = Color.argb(20, 27, 0, 82); // rgba(27, 0, 82, 0.08)
+      
+      Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+      shadowPaint.setColor(bgColor);
+      
+      // Layer shadows from largest to smallest
+      shadowPaint.setShadowLayer(32f, 0, 8f, shadowColor);
+      canvas.drawCircle(centerX, centerY, radius, shadowPaint);
+      shadowPaint.setShadowLayer(24f, 0, 4f, shadowColor);
+      canvas.drawCircle(centerX, centerY, radius, shadowPaint);
+      shadowPaint.setShadowLayer(16f, 0, 4f, shadowColor);
+      canvas.drawCircle(centerX, centerY, radius, shadowPaint);
+      shadowPaint.setShadowLayer(8f, 0, 2f, shadowColor);
+      canvas.drawCircle(centerX, centerY, radius, shadowPaint);
       
       // Draw background circle
       canvas.drawCircle(centerX, centerY, radius, bgPaint);
@@ -876,15 +916,18 @@ public class MapViewController {
       
       // Draw label rectangle and text if label exists
       if (hasLabel) {
-        float rectTop = circleDiameter + (borderWidth * 2);
+        float rectTop = circleDiameter + (borderWidth * 2) + shadowBlur;
         float rectLeft = (bitmapWidth - labelRectWidth) / 2f;
         float rectRight = rectLeft + labelRectWidth;
         float rectBottom = rectTop + labelRectHeight;
         float cornerRadius = padding * 0.5f;
         
-        // Draw rounded rectangle for label
+        // Add shadow to label rectangle
         Paint rectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         rectPaint.setColor(labelBackgroundColor);
+        rectPaint.setShadowLayer(16f, 0, 4f, shadowColor);
+        
+        // Draw rounded rectangle for label
         canvas.drawRoundRect(rectLeft, rectTop, rectRight, rectBottom, cornerRadius, cornerRadius, rectPaint);
         
         // Draw label text centered on rectangle

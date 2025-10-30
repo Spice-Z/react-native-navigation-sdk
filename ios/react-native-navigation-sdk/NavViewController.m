@@ -576,9 +576,15 @@
     labelRectWidth = MAX(circleDiameter + (borderWidth * 2), labelSize.width + padding);
   }
   
-  // Calculate total bitmap dimensions
+  // Calculate shadow offset and blur (always enabled)
+  CGFloat shadowOffset = 8.0; // 8pt offset for shadow
+  CGFloat shadowBlur = 32.0;  // Large blur radius for soft shadow
+  
+  // Calculate total bitmap dimensions (add space for shadow)
   CGFloat bitmapWidth = (label && label.length > 0) ? labelRectWidth : (circleDiameter + (borderWidth * 2));
+  bitmapWidth += shadowBlur * 2; // Add space for shadow blur
   CGFloat bitmapHeight = circleDiameter + (borderWidth * 2) + labelRectHeight;
+  bitmapHeight += shadowOffset + shadowBlur * 2; // Add space for shadow
   
   // Create bitmap context
   UIGraphicsBeginImageContextWithOptions(CGSizeMake(bitmapWidth, bitmapHeight), NO, 0.0);
@@ -586,8 +592,37 @@
   
   // Calculate circle center
   CGFloat centerX = bitmapWidth / 2.0;
-  CGFloat centerY = (circleDiameter + (borderWidth * 2)) / 2.0;
+  CGFloat centerY = (circleDiameter + (borderWidth * 2)) / 2.0 + shadowBlur;
   CGFloat radius = (circleDiameter - borderWidth) / 2.0;
+  
+  // Add multi-layered shadow effect - draw multiple times with different blur radii
+  // This approximates the CSS multi-shadow effect
+  UIColor *shadowColor = [UIColor colorWithRed:27.0/255.0 green:0 blue:82.0/255.0 alpha:0.08];
+  
+  // Layer shadows from largest to smallest
+  CGContextSaveGState(context);
+  CGContextSetShadowWithColor(context, CGSizeMake(0, 8), 32, shadowColor.CGColor);
+  CGContextSetFillColorWithColor(context, bgColor.CGColor);
+  CGContextFillEllipseInRect(context, CGRectMake(centerX - radius, centerY - radius, radius * 2, radius * 2));
+  CGContextRestoreGState(context);
+  
+  CGContextSaveGState(context);
+  CGContextSetShadowWithColor(context, CGSizeMake(0, 4), 24, shadowColor.CGColor);
+  CGContextSetFillColorWithColor(context, bgColor.CGColor);
+  CGContextFillEllipseInRect(context, CGRectMake(centerX - radius, centerY - radius, radius * 2, radius * 2));
+  CGContextRestoreGState(context);
+  
+  CGContextSaveGState(context);
+  CGContextSetShadowWithColor(context, CGSizeMake(0, 4), 16, shadowColor.CGColor);
+  CGContextSetFillColorWithColor(context, bgColor.CGColor);
+  CGContextFillEllipseInRect(context, CGRectMake(centerX - radius, centerY - radius, radius * 2, radius * 2));
+  CGContextRestoreGState(context);
+  
+  CGContextSaveGState(context);
+  CGContextSetShadowWithColor(context, CGSizeMake(0, 2), 8, shadowColor.CGColor);
+  CGContextSetFillColorWithColor(context, bgColor.CGColor);
+  CGContextFillEllipseInRect(context, CGRectMake(centerX - radius, centerY - radius, radius * 2, radius * 2));
+  CGContextRestoreGState(context);
   
   // Draw background circle
   CGContextSetFillColorWithColor(context, bgColor.CGColor);
@@ -608,15 +643,22 @@
   
   // Draw label rectangle and text if label exists
   if (label && label.length > 0) {
-    CGFloat rectTop = circleDiameter + (borderWidth * 2);
+    CGFloat rectTop = circleDiameter + (borderWidth * 2) + shadowBlur;
     CGFloat rectLeft = (bitmapWidth - labelRectWidth) / 2.0;
     CGFloat cornerRadius = padding * 0.5;
+    
+    // Add shadow to label rectangle
+    UIColor *shadowColor = [UIColor colorWithRed:27.0/255.0 green:0 blue:82.0/255.0 alpha:0.08];
+    CGContextSaveGState(context);
+    CGContextSetShadowWithColor(context, CGSizeMake(0, 4), 16, shadowColor.CGColor);
     
     // Draw rounded rectangle for label
     UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:CGRectMake(rectLeft, rectTop, labelRectWidth, labelRectHeight)
                                                      cornerRadius:cornerRadius];
     CGContextSetFillColorWithColor(context, labelBackgroundColor.CGColor);
     [path fill];
+    
+    CGContextRestoreGState(context);
     
     // Draw label text centered on rectangle
     NSDictionary *labelAttributes = @{
@@ -669,9 +711,14 @@
     labelRectHeight = labelSize.height + (padding * 0.8);
   }
   
-  // Calculate total bitmap height and circle center position
+  // Calculate shadow offset and blur (always enabled)
+  CGFloat shadowOffset = 8.0;
+  CGFloat shadowBlur = 32.0;
+  
+  // Calculate total bitmap height and circle center position (accounting for shadow)
   CGFloat bitmapHeight = circleDiameter + (borderWidth * 2) + labelRectHeight;
-  CGFloat circleCenterY = (circleDiameter + (borderWidth * 2)) / 2.0;
+  bitmapHeight += shadowOffset + shadowBlur * 2;
+  CGFloat circleCenterY = (circleDiameter + (borderWidth * 2)) / 2.0 + shadowBlur;
   
   // Return anchor V (fraction of bitmap height where circle center is)
   return circleCenterY / bitmapHeight;
@@ -718,7 +765,7 @@
   NSString *labelBackgroundColorStr = [textMarkerOptions objectForKey:@"labelBackgroundColor"];
   UIColor *labelBackgroundColor = labelBackgroundColorStr ? [UIColor colorWithHexString:labelBackgroundColorStr] : bgColor;
   
-  // Generate bitmap with text and circle background
+  // Generate bitmap with text and circle background (shadow always enabled)
   UIImage *icon = [self createTextBitmapWithText:text
                                        textColor:textColor
                                          bgColor:bgColor
